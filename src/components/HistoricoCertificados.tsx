@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { FileText, ExternalLink, Inbox, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
+import CertificadoDetailModal from "./CertificadoDetailModal";
 
 interface HistoricoCertificadosProps {
   certificados: CertificadoMeta[];
