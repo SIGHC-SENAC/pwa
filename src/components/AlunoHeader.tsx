@@ -19,6 +19,7 @@ interface AlunoHeaderProps {
 
 const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const initials = userName
