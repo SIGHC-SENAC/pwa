@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,7 +20,6 @@ interface AlunoHeaderProps {
 
 const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const initials = userName
@@ -31,7 +31,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await logout();
+    await signOut(auth);
     navigate("/login");
   };
 

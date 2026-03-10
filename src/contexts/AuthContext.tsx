@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut } from "firebase/auth";
+import { User, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { requestAndSyncFcmToken, deactivateCurrentToken } from "@/services/fcmService";
 
 interface UserData {
   nome: string;
@@ -17,7 +16,6 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   isAluno: boolean;
-  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -25,7 +23,6 @@ const AuthContext = createContext<AuthContextType>({
   userData: null,
   loading: true,
   isAluno: false,
-  logout: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -74,11 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserData(null);
           }
         }
-
-        // Sync FCM token silently after auth
-        requestAndSyncFcmToken(firebaseUser.uid).catch((e) =>
-          console.warn("[FCM] Sync silencioso falhou:", e)
-        );
       } else {
         setUserData(null);
       }
@@ -90,15 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAluno = userData?.role === "aluno";
 
-  const logout = async () => {
-    if (user) {
-      await deactivateCurrentToken(user.uid).catch(() => {});
-    }
-    await signOut(auth);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, userData, loading, isAluno, logout }}>
+    <AuthContext.Provider value={{ user, userData, loading, isAluno }}>
       {children}
     </AuthContext.Provider>
   );
