@@ -37,12 +37,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
+          // Force token refresh to get latest custom claims
+          const tokenResult = await firebaseUser.getIdTokenResult(true);
+          const claimRole = tokenResult.claims.role as string | undefined;
+
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
             setUserData(userDoc.data() as UserData);
+          } else {
+            // Fallback: build userData from Auth + claims
+            setUserData({
+              nome: firebaseUser.displayName || "",
+              email: firebaseUser.email || "",
+              role: claimRole || "",
+              createdAt: 0,
+              createdBy: "",
+            });
           }
         } catch (error) {
           console.error("Erro ao buscar dados do usuário:", error);
+          // Fallback on error: use custom claims
+          try {
+            const tokenResult = await firebaseUser.getIdTokenResult();
+            const claimRole = tokenResult.claims.role as string | undefined;
+            setUserData({
+              nome: firebaseUser.displayName || "",
+              email: firebaseUser.email || "",
+              role: claimRole || "",
+              createdAt: 0,
+              createdBy: "",
+            });
+          } catch {
+            setUserData(null);
+          }
         }
       } else {
         setUserData(null);
