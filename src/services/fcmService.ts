@@ -62,31 +62,44 @@ export async function requestAndSyncFcmToken(uid: string): Promise<string | null
       return null;
     }
 
-    // Request permission if not yet decided
+    // Always read current permission state fresh
     let permission = Notification.permission;
+    console.info("[FCM] Permissão atual:", permission);
+
+    // Only prompt if still "default"
     if (permission === "default") {
       permission = await Notification.requestPermission();
+      console.info("[FCM] Permissão após solicitar:", permission);
     }
 
+    // Save permission state regardless
+    await updatePermissionState(uid, permission).catch(() => {});
+
     if (permission !== "granted") {
-      console.info("[FCM] Permissão de notificação não concedida:", permission);
-      await updatePermissionState(uid, permission);
+      console.info("[FCM] Permissão não concedida:", permission);
       return null;
     }
 
     const messaging = await getMessagingInstance();
-    if (!messaging) return null;
+    if (!messaging) {
+      console.warn("[FCM] Messaging instance não disponível.");
+      return null;
+    }
 
     // Ensure SW is registered before requesting token
     let swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
     if (!swRegistration) {
       try {
         swRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-        console.info("[FCM] Service worker registrado manualmente.");
+        // Wait for SW to be ready
+        await navigator.serviceWorker.ready;
+        console.info("[FCM] Service worker registrado e pronto.");
       } catch (e) {
         console.warn("[FCM] Falha ao registrar SW:", e);
       }
     }
+
+    console.info("[FCM] Obtendo token FCM...");
 
     // Add timeout to prevent infinite hang
     const tokenPromise = getToken(messaging, {
@@ -94,18 +107,20 @@ export async function requestAndSyncFcmToken(uid: string): Promise<string | null
       serviceWorkerRegistration: swRegistration || undefined,
     });
 
-    const timeoutPromise = new Promise<null>((_, reject) =>
-      setTimeout(() => reject(new Error("FCM token request timeout")), 15000)
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("FCM token request timeout (15s)")), 15000)
     );
 
     const token = await Promise.race([tokenPromise, timeoutPromise]);
 
     if (!token) {
-      console.warn("[FCM] Não foi possível obter token.");
+      console.warn("[FCM] Token retornado vazio.");
       return null;
     }
 
+    console.info("[FCM] Token obtido, sincronizando com Firestore...");
     await syncTokenToFirestore(uid, token, permission);
+    console.info("[FCM] Token sincronizado com sucesso!");
 
     // Listen for foreground messages
     onMessage(messaging, (payload) => {
