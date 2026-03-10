@@ -68,7 +68,7 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({
         onClick={() => !disabled && inputRef.current?.click()}
         className={`
           relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 md:p-12 cursor-pointer transition-all duration-200
-          ${isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/50"}
+          ${isDragging ? "border-secondary bg-secondary/5" : "border-border hover:border-primary/40 hover:bg-muted/50"}
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
@@ -95,8 +95,8 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({
 
       {file && (
         <div className="animate-fade-in flex items-center gap-3 rounded-lg border bg-card p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <FileText className="h-5 w-5 text-primary" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
+            <FileText className="h-5 w-5 text-secondary" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-foreground">{file.name}</p>

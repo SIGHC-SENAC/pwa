@@ -11,8 +11,8 @@ const orientacoes = [
 
 const CardOrientacoes: React.FC = () => {
   return (
-    <div className="rounded-xl border bg-card p-6">
-      <h3 className="font-serif text-lg font-semibold text-foreground">Orientações</h3>
+    <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
+      <h3 className="text-base sm:text-lg font-bold text-foreground">Orientações</h3>
       <ul className="mt-4 space-y-3">
         {orientacoes.map((text, i) => (
           <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
