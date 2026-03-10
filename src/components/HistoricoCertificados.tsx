@@ -156,6 +156,11 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
           </div>
         );
       })}
+      <CertificadoDetailModal
+        cert={selectedCert}
+        open={!!selectedCert}
+        onClose={() => setSelectedCert(null)}
+      />
     </div>
   );
 };
