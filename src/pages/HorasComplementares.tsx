@@ -15,6 +15,7 @@ import DashboardCards from "@/components/DashboardCards";
 import UploadDropzone from "@/components/UploadDropzone";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
+import ProgressoHoras from "@/components/ProgressoHoras";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -188,6 +189,15 @@ const HorasComplementares: React.FC = () => {
 
         {/* Summary cards */}
         <DashboardCards certificados={certificados} loading={histLoading} />
+
+        {/* Progress bar */}
+        <ProgressoHoras
+          horasAprovadas={certificados.reduce(
+            (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
+            0
+          )}
+          loading={histLoading}
+        />
 
         {/* Main content */}
         <div className="grid gap-6 lg:grid-cols-3">
