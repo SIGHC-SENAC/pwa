@@ -15,6 +15,7 @@ import DashboardCards from "@/components/DashboardCards";
 import FloatingUploadButton from "@/components/FloatingUploadButton";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import ProgressoHoras from "@/components/ProgressoHoras";
 import { toast } from "sonner";
 import {
@@ -198,45 +199,35 @@ const HorasComplementares: React.FC = () => {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* History section */}
-            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
+            <CollapsibleSection
+              icon={
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
                   <History className="h-4 w-4 text-secondary" />
                 </div>
-                <div>
-                  <h2 className="text-sm sm:text-base font-bold text-foreground">
-                    Histórico de envios
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Acompanhe o status dos seus certificados
-                  </p>
-                </div>
-              </div>
-              <div className="p-4 sm:p-6">
-                <HistoricoCertificados
-                  certificados={certificados}
-                  loading={histLoading}
-                />
-              </div>
-            </section>
+              }
+              title="Histórico de envios"
+              subtitle="Acompanhe o status dos seus certificados"
+            >
+              <HistoricoCertificados
+                certificados={certificados}
+                loading={histLoading}
+              />
+            </CollapsibleSection>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5">
+            <CollapsibleSection
+              icon={
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                   <BookOpen className="h-4 w-4 text-primary" />
                 </div>
-                <h3 className="text-sm font-bold text-foreground">
-                  Orientações
-                </h3>
-              </div>
-              <div className="p-4 sm:p-5">
-                <CardOrientacoes />
-              </div>
-            </section>
+              }
+              title="Orientações"
+              defaultOpen={false}
+            >
+              <CardOrientacoes />
+            </CollapsibleSection>
           </div>
         </div>
 
