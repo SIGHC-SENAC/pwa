@@ -62,7 +62,7 @@ const CertificadoDetailModal: React.FC<Props> = ({ cert, open, onClose }) => {
           <FileText className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground break-words">{cert.nomeArquivo}</p>
+          <p className="text-sm font-medium text-foreground break-words line-clamp-2 overflow-hidden">{cert.nomeArquivo}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {formatFileSize(cert.tamanhoBytes)} · {formatDate(cert.createdAt)}
           </p>
