@@ -3,7 +3,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import app, { db } from "@/lib/firebase";
 
 // VAPID key from Firebase Console > Project Settings > Cloud Messaging > Web Push certificates
-const VAPID_KEY = ""; // TODO: Add your VAPID key here
+const VAPID_KEY = "BHGUjHXChP4IRvphANu9RPlQWfIQq7Gw0WSk3u2R1hfNHv4AxF5P_ixg7_O0jP2LA4m1D7VQOE727BFNgtPmMhA";
 
 export interface FcmTokenData {
   token: string;
