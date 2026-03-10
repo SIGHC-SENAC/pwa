@@ -41,6 +41,7 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
   uploading,
   progress,
   onUpload,
+  onSuccess,
 }) => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
