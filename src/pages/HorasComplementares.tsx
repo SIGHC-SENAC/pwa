@@ -140,14 +140,28 @@ const HorasComplementares: React.FC = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-6 sm:px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <GraduationCap className="h-5 w-5 text-primary" />
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-6 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <GraduationCap className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-serif text-2xl font-bold text-foreground">Horas Complementares</h1>
+              <p className="text-sm text-muted-foreground">Envie seu certificado em PDF para análise</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-serif text-2xl font-bold text-foreground">Horas Complementares</h1>
-            <p className="text-sm text-muted-foreground">Envie seu certificado em PDF para análise</p>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await signOut(auth);
+              navigate("/login");
+            }}
+            className="gap-2 text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sair</span>
+          </Button>
         </div>
       </header>
 
