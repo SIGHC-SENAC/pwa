@@ -31,7 +31,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await signOut(auth);
+    await logout();
     navigate("/login");
   };
 

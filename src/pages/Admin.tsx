@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth } from "@/lib/firebase";
+import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
 import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
 import {
   fetchAllCertificados,
