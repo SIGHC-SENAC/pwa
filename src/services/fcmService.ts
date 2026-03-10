@@ -58,7 +58,7 @@ export async function requestAndSyncFcmToken(uid: string): Promise<string | null
     }
 
     if (!VAPID_KEY) {
-      console.warn("[FCM] VAPID_KEY não configurada.");
+      console.warn("[FCM] VAPID_KEY não configurada. Pule a sincronização do FCM.");
       return null;
     }
 
@@ -70,6 +70,7 @@ export async function requestAndSyncFcmToken(uid: string): Promise<string | null
 
     if (permission !== "granted") {
       console.info("[FCM] Permissão de notificação não concedida:", permission);
+      // Still save the permission state
       await updatePermissionState(uid, permission);
       return null;
     }
@@ -77,28 +78,13 @@ export async function requestAndSyncFcmToken(uid: string): Promise<string | null
     const messaging = await getMessagingInstance();
     if (!messaging) return null;
 
-    // Ensure SW is registered before requesting token
-    let swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
-    if (!swRegistration) {
-      try {
-        swRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-        console.info("[FCM] Service worker registrado manualmente.");
-      } catch (e) {
-        console.warn("[FCM] Falha ao registrar SW:", e);
-      }
-    }
+    // Get registration for the custom SW
+    const swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
 
-    // Add timeout to prevent infinite hang
-    const tokenPromise = getToken(messaging, {
+    const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: swRegistration || undefined,
     });
-
-    const timeoutPromise = new Promise<null>((_, reject) =>
-      setTimeout(() => reject(new Error("FCM token request timeout")), 15000)
-    );
-
-    const token = await Promise.race([tokenPromise, timeoutPromise]);
 
     if (!token) {
       console.warn("[FCM] Não foi possível obter token.");
@@ -107,7 +93,7 @@ export async function requestAndSyncFcmToken(uid: string): Promise<string | null
 
     await syncTokenToFirestore(uid, token, permission);
 
-    // Listen for foreground messages
+    // Listen for token refresh
     onMessage(messaging, (payload) => {
       console.info("[FCM] Mensagem recebida em foreground:", payload);
     });
