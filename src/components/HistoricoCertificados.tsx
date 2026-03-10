@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { FileText, ExternalLink, Inbox, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
+import CertificadoDetailModal from "./CertificadoDetailModal";
 
 interface HistoricoCertificadosProps {
   certificados: CertificadoMeta[];
@@ -30,6 +31,8 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
   certificados,
   loading,
 }) => {
+  const [selectedCert, setSelectedCert] = useState<CertificadoMeta | null>(null);
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -62,7 +65,8 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
         return (
           <div
             key={cert.id}
-            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden"
+            onClick={() => setSelectedCert(cert)}
+            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden cursor-pointer active:scale-[0.99]"
           >
             {/* Main row */}
             <div className="flex items-start gap-2.5 sm:gap-3">
@@ -152,6 +156,11 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
           </div>
         );
       })}
+      <CertificadoDetailModal
+        cert={selectedCert}
+        open={!!selectedCert}
+        onClose={() => setSelectedCert(null)}
+      />
     </div>
   );
 };
