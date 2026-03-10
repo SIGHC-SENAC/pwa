@@ -208,10 +208,10 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               </div>
 
               {/* Show previous analysis info if already analyzed */}
-              {!isPendente && (cert as any).nomeAdmin && (
+              {!isPendente && cert.nomeAdmin && (
                 <div className="text-xs text-muted-foreground space-y-1 bg-muted rounded-md p-3">
-                  <p>Analisado por: <span className="font-medium text-foreground">{(cert as any).nomeAdmin}</span></p>
-                  <p>Data: <span className="font-medium text-foreground">{formatDate((cert as any).dataAnalise)}</span></p>
+                  <p>Analisado por: <span className="font-medium text-foreground">{cert.nomeAdmin}</span></p>
+                  <p>Data: <span className="font-medium text-foreground">{formatDate(cert.dataAnalise)}</span></p>
                 </div>
               )}
             </div>

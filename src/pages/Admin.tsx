@@ -347,10 +347,10 @@ const Admin: React.FC = () => {
                             <Badge variant="outline" className={st.className}>{st.label}</Badge>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell text-sm font-medium text-foreground">
-                            {(cert as any).horasAprovadas || "—"}
+                            {cert.horasAprovadas || "—"}
                           </TableCell>
                           <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
-                            {(cert as any).nomeAdmin || "—"}
+                            {cert.nomeAdmin || "—"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
