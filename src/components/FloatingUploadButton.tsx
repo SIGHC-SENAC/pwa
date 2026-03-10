@@ -45,6 +45,16 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+  const wasUploading = useRef(false);
+
+  useEffect(() => {
+    if (uploading) {
+      wasUploading.current = true;
+    } else if (wasUploading.current && !file) {
+      wasUploading.current = false;
+      setOpen(false);
+    }
+  }, [uploading, file]);
 
   const content = (
     <div className="space-y-4">
