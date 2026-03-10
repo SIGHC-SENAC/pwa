@@ -121,7 +121,7 @@ const Admin: React.FC = () => {
     const pendentes = certificados.filter((c) => c.status === "pendente").length;
     const aprovados = certificados.filter((c) => c.status === "aprovado").length;
     const rejeitados = certificados.filter((c) => c.status === "rejeitado").length;
-    const horasTotal = certificados.reduce((sum, c) => sum + ((c as any).horasAprovadas || 0), 0);
+    const horasTotal = certificados.reduce((sum, c) => sum + (c.horasAprovadas || 0), 0);
     return { total, pendentes, aprovados, rejeitados, horasTotal };
   }, [certificados]);
 
