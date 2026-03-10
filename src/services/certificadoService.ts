@@ -32,8 +32,12 @@ export interface CertificadoMeta {
   status: "pendente" | "aprovado" | "rejeitado";
   observacaoAluno: string;
   horasInformadas: number | null;
+  horasAprovadas: number | null;
+  observacaoAdmin: string | null;
+  motivoRejeicao: string | null;
+  nomeAdmin: string | null;
   analisadoPor: string | null;
-  dataAnalise: Date | null;
+  dataAnalise: { seconds: number; nanoseconds: number } | null;
   createdAt: { seconds: number; nanoseconds: number } | null;
   updatedAt: { seconds: number; nanoseconds: number } | null;
 }
