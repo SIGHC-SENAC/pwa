@@ -271,7 +271,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   // Desktop: Dialog with side-by-side layout
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-6xl w-[calc(100%-2rem)] h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="font-serif text-xl">Análise do Certificado</DialogTitle>
         </DialogHeader>
