@@ -28,50 +28,83 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({ horasAprovadas, loading
   }, [percentual, loading]);
 
   if (loading) {
-    return <div className="h-20 animate-pulse rounded-xl bg-muted" />;
+    return <div className="h-44 animate-pulse rounded-xl bg-muted" />;
   }
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <GraduationCap className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-sm font-bold text-foreground truncate">{nomeCurso}</span>
+    <section className="animate-fade-in rounded-xl border bg-card shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          <GraduationCap className="h-4 w-4 text-primary" />
         </div>
-        <span className="text-sm font-bold text-primary shrink-0">{animatedPercent}%</span>
+        <div>
+          <h2 className="text-sm sm:text-base font-bold text-foreground">
+            Progresso das Horas Complementares
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Acompanhe seu avanço em relação à carga horária exigida do curso
+          </p>
+        </div>
       </div>
 
-      <Progress value={animatedPercent} className="h-2.5 bg-muted" />
+      {/* Content */}
+      <div className="p-4 sm:p-6 space-y-4">
+        {/* Curso */}
+        <p className="text-sm font-semibold text-foreground">{nomeCurso}</p>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-primary" />
-            <span className="font-semibold text-foreground">{horasAprovadas}h</span> aprovadas
+        {/* Stats row */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <span className="text-muted-foreground">
+            <span className="font-bold text-foreground">{horasAprovadas}h</span> de{" "}
+            <span className="font-bold text-foreground">{cargaHorariaTotalCurso}h</span> concluídas
           </span>
           {!concluido && horasAprovadas > 0 && (
-            <span>Faltam <span className="font-semibold text-foreground">{horasRestantes}h</span></span>
+            <span className="text-muted-foreground">
+              Faltam <span className="font-bold text-foreground">{horasRestantes}h</span> para completar
+            </span>
           )}
         </div>
-        <span className="flex items-center gap-1">
-          <Target className="h-3 w-3" />
-          Meta: {cargaHorariaTotalCurso}h
-        </span>
-      </div>
 
-      {horasAprovadas === 0 && (
-        <p className="text-xs text-muted-foreground italic">
-          Envie seus certificados para começar a acumular horas.
-        </p>
-      )}
-
-      {concluido && (
-        <div className="flex items-center gap-2 rounded-md bg-success/10 px-3 py-2">
-          <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-          <span className="text-xs font-semibold text-success">Carga horária concluída! 🎉</span>
+        {/* Progress bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Progresso</span>
+            <span className="text-sm font-bold text-primary">{animatedPercent}%</span>
+          </div>
+          <Progress
+            value={animatedPercent}
+            className="h-3 bg-muted"
+          />
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+              Horas aprovadas
+            </span>
+            <span className="flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              Meta do curso: {cargaHorariaTotalCurso}h
+            </span>
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* State messages */}
+        {horasAprovadas === 0 && (
+          <p className="text-xs text-muted-foreground italic">
+            Você ainda não possui horas aprovadas. Envie seus certificados para começar!
+          </p>
+        )}
+
+        {concluido && (
+          <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3">
+            <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+            <span className="text-sm font-semibold text-success">
+              Carga horária complementar concluída! 🎉
+            </span>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 

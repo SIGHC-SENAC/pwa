@@ -1,14 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { getDownloadURL } from "firebase/storage";
+import { ref } from "firebase/storage";
 import { useAuth } from "@/contexts/AuthContext";
+import { storage } from "@/lib/firebase";
 import {
+  uploadCertificado,
+  saveCertificadoMeta,
   fetchCertificados,
   CertificadoMeta,
 } from "@/services/certificadoService";
 import AlunoHeader from "@/components/AlunoHeader";
 import DashboardCards from "@/components/DashboardCards";
 import UploadDropzone from "@/components/UploadDropzone";
-import UploadModal from "@/components/UploadModal";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
 import ProgressoHoras from "@/components/ProgressoHoras";
@@ -16,12 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { getDownloadURL, ref } from "firebase/storage";
-import { storage } from "@/lib/firebase";
-import {
-  uploadCertificado,
-  saveCertificadoMeta,
-} from "@/services/certificadoService";
 import {
   Loader2,
   Send,
@@ -29,7 +27,6 @@ import {
   Upload,
   History,
   BookOpen,
-  Plus,
 } from "lucide-react";
 
 const HorasComplementares: React.FC = () => {
@@ -42,7 +39,6 @@ const HorasComplementares: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [histLoading, setHistLoading] = useState(true);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const loadCertificados = useCallback(async () => {
     if (!user) return;
@@ -59,11 +55,15 @@ const HorasComplementares: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/login");
+    if (!authLoading && !user) {
+      navigate("/login");
+    }
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
-    if (user && isAluno) loadCertificados();
+    if (user && isAluno) {
+      loadCertificados();
+    }
   }, [user, isAluno, loadCertificados]);
 
   const handleUpload = async () => {
@@ -109,7 +109,9 @@ const HorasComplementares: React.FC = () => {
             loadCertificados();
           } catch (err) {
             console.error("Erro ao salvar metadados:", err);
-            toast.error("O arquivo foi enviado, mas houve um erro ao salvar os dados.");
+            toast.error(
+              "O arquivo foi enviado, mas houve um erro ao salvar os dados."
+            );
           } finally {
             setUploading(false);
           }
@@ -146,7 +148,8 @@ const HorasComplementares: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
-          Esta página é exclusiva para alunos.
+          Esta página é exclusiva para alunos. Entre em contato com a
+          coordenação se acredita que isso é um erro.
         </p>
       </div>
     );
@@ -154,121 +157,179 @@ const HorasComplementares: React.FC = () => {
 
   const userName = user.displayName || userData?.nome || "Aluno";
   const userEmail = user.email || userData?.email || "";
-  const horasAprovadas = certificados.reduce(
-    (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
-    0
-  );
 
   const today = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
 
   return (
     <div className="min-h-screen bg-background">
       <AlunoHeader userName={userName} userEmail={userEmail} />
 
-      <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-5">
-        {/* Row 1: Welcome compact + date */}
-        <div className="animate-fade-in flex items-center justify-between rounded-lg bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] px-4 py-3 sm:px-5 sm:py-4 text-primary-foreground">
-          <div>
-            <h1 className="text-base sm:text-lg font-bold">Olá, {userName.split(" ")[0]}! 👋</h1>
-            <p className="text-xs text-primary-foreground/70">Acompanhe seus certificados e horas complementares</p>
-          </div>
-          <p className="text-xs text-primary-foreground/50 capitalize hidden sm:block">{today}</p>
-        </div>
-
-        {/* Row 2: Cards + Progress side by side on desktop */}
-        <div className="grid gap-4 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <DashboardCards certificados={certificados} loading={histLoading} />
-          </div>
-          <div className="lg:col-span-2">
-            <ProgressoHoras horasAprovadas={horasAprovadas} loading={histLoading} />
-          </div>
-        </div>
-
-        {/* Row 3: Upload + Orientações side by side */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <section className="lg:col-span-2 rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 border-b bg-muted/30 px-4 py-2.5 sm:px-5 sm:py-3">
-              <Upload className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-bold text-foreground">Enviar certificado</h2>
+      <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 space-y-6 sm:space-y-8">
+        {/* Welcome */}
+        <div className="animate-fade-in rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 sm:p-7 text-primary-foreground shadow-md">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">
+                Olá, {userName.split(" ")[0]}! 👋
+              </h1>
+              <p className="mt-1 text-sm text-primary-foreground/80">
+                Acompanhe seus certificados e horas complementares
+              </p>
             </div>
-            <div className="p-4 sm:p-5 space-y-3">
-              <UploadDropzone
-                file={file}
-                onFileSelect={setFile}
-                onFileRemove={() => setFile(null)}
-                disabled={uploading}
-              />
-              <Textarea
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                placeholder="Observação opcional sobre o certificado..."
-                className="resize-none"
-                rows={2}
-                maxLength={500}
-                disabled={uploading}
-              />
-              {uploading && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Enviando...</span>
-                    <span className="font-medium">{progress}%</span>
-                  </div>
-                  <Progress value={progress} className="h-1.5" />
+            <p className="text-xs sm:text-sm text-primary-foreground/60 capitalize">
+              {today}
+            </p>
+          </div>
+        </div>
+
+        {/* Summary cards */}
+        <DashboardCards certificados={certificados} loading={histLoading} />
+
+        {/* Progress bar */}
+        <ProgressoHoras
+          horasAprovadas={certificados.reduce(
+            (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
+            0
+          )}
+          loading={histLoading}
+        />
+
+        {/* Main content */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Upload section */}
+            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Upload className="h-4 w-4 text-primary" />
                 </div>
-              )}
-              <Button onClick={handleUpload} disabled={!file || uploading} className="w-full sm:w-auto">
-                {uploading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</>
-                ) : (
-                  <><Send className="h-4 w-4" /> Enviar</>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-foreground">
+                    Enviar certificado
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione ou arraste um arquivo PDF
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-6 space-y-4">
+                <UploadDropzone
+                  file={file}
+                  onFileSelect={setFile}
+                  onFileRemove={() => setFile(null)}
+                  disabled={uploading}
+                />
+
+                <div>
+                  <label
+                    className="text-sm font-medium text-foreground"
+                    htmlFor="observacao"
+                  >
+                    Observação{" "}
+                    <span className="text-muted-foreground font-normal">
+                      (opcional)
+                    </span>
+                  </label>
+                  <Textarea
+                    id="observacao"
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    placeholder="Descreva o certificado, evento ou atividade..."
+                    className="mt-1.5 resize-none"
+                    rows={3}
+                    maxLength={500}
+                    disabled={uploading}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground text-right">
+                    {observacao.length}/500
+                  </p>
+                </div>
+
+                {uploading && (
+                  <div className="animate-fade-in space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Enviando...
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {progress}%
+                      </span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
                 )}
-              </Button>
-            </div>
-          </section>
 
-          <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 border-b bg-muted/30 px-4 py-2.5">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Orientações</h3>
-            </div>
-            <div className="p-4">
-              <CardOrientacoes />
-            </div>
-          </section>
+                <Button
+                  onClick={handleUpload}
+                  disabled={!file || uploading}
+                  className="w-full sm:w-auto"
+                  size="lg"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Enviar certificado
+                    </>
+                  )}
+                </Button>
+              </div>
+            </section>
+
+            {/* History section */}
+            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
+                  <History className="h-4 w-4 text-secondary" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-foreground">
+                    Histórico de envios
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Acompanhe o status dos seus certificados
+                  </p>
+                </div>
+              </div>
+              <div className="p-4 sm:p-6">
+                <HistoricoCertificados
+                  certificados={certificados}
+                  loading={histLoading}
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Orientações */}
+            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">
+                  Orientações
+                </h3>
+              </div>
+              <div className="p-4 sm:p-5">
+                <CardOrientacoes />
+              </div>
+            </section>
+          </div>
         </div>
-
-        {/* Row 4: History */}
-        <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2.5 border-b bg-muted/30 px-4 py-2.5 sm:px-5 sm:py-3">
-            <History className="h-4 w-4 text-secondary" />
-            <h2 className="text-sm font-bold text-foreground">Histórico de envios</h2>
-          </div>
-          <div className="p-4 sm:p-5">
-            <HistoricoCertificados certificados={certificados} loading={histLoading} />
-          </div>
-        </section>
       </main>
-
-      {/* Floating upload button */}
-      <button
-        onClick={() => setUploadModalOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-[hsl(210,100%,24%)] transition-all hover:scale-105 active:scale-95 animate-fade-in"
-        aria-label="Enviar certificado"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
-
-      {/* Upload modal */}
-      <UploadModal
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        onSuccess={loadCertificados}
-      />
     </div>
   );
 };
