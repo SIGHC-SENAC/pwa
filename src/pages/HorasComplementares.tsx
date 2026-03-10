@@ -145,14 +145,14 @@ const HorasComplementares: React.FC = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-6 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <GraduationCap className="h-5 w-5 text-primary" />
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:py-6 sm:px-6">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-foreground">Horas Complementares</h1>
-              <p className="text-sm text-muted-foreground">Envie seu certificado em PDF para análise</p>
+            <div className="min-w-0">
+              <h1 className="font-serif text-lg sm:text-2xl font-bold text-foreground">Horas Complementares</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Envie seu certificado em PDF para análise</p>
             </div>
           </div>
           <Button
@@ -162,7 +162,7 @@ const HorasComplementares: React.FC = () => {
               await signOut(auth);
               navigate("/login");
             }}
-            className="gap-2 text-muted-foreground hover:text-destructive"
+            className="gap-2 text-muted-foreground hover:text-destructive shrink-0"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Sair</span>
@@ -170,17 +170,17 @@ const HorasComplementares: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-3">
+      <main className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
+        <div className="grid gap-5 sm:gap-8 lg:grid-cols-3">
           {/* Upload Card */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-xl border bg-card p-6 shadow-sm">
-              <h2 className="font-serif text-lg font-semibold text-foreground">Enviar certificado</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+          <div className="lg:col-span-2 space-y-5 sm:space-y-6">
+            <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
+              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Enviar certificado</h2>
+              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                 Selecione ou arraste um arquivo PDF para enviar
               </p>
 
-              <div className="mt-5">
+              <div className="mt-4 sm:mt-5">
                 <UploadDropzone
                   file={file}
                   onFileSelect={setFile}
@@ -189,7 +189,7 @@ const HorasComplementares: React.FC = () => {
                 />
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <label className="text-sm font-medium text-foreground" htmlFor="observacao">
                   Observação <span className="text-muted-foreground font-normal">(opcional)</span>
                 </label>
@@ -209,7 +209,7 @@ const HorasComplementares: React.FC = () => {
               </div>
 
               {uploading && (
-                <div className="mt-4 animate-fade-in space-y-2">
+                <div className="mt-3 sm:mt-4 animate-fade-in space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Enviando...</span>
                     <span className="font-medium text-foreground">{progress}%</span>
@@ -218,7 +218,7 @@ const HorasComplementares: React.FC = () => {
                 </div>
               )}
 
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <Button
                   onClick={handleUpload}
                   disabled={!file || uploading}
@@ -241,31 +241,31 @@ const HorasComplementares: React.FC = () => {
             </div>
 
             {/* Histórico */}
-            <div className="rounded-xl border bg-card p-6 shadow-sm">
-              <h2 className="font-serif text-lg font-semibold text-foreground">Histórico de envios</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+            <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
+              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Histórico de envios</h2>
+              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                 Acompanhe o status dos seus certificados
               </p>
-              <div className="mt-5">
+              <div className="mt-4 sm:mt-5">
                 <HistoricoCertificados certificados={certificados} loading={histLoading} />
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             <CardOrientacoes />
 
-            <div className="rounded-xl border bg-card p-6">
-              <h3 className="font-serif text-lg font-semibold text-foreground">Seu perfil</h3>
-              <div className="mt-3 space-y-2 text-sm">
-                <div>
+            <div className="rounded-xl border bg-card p-4 sm:p-6">
+              <h3 className="font-serif text-base sm:text-lg font-semibold text-foreground">Seu perfil</h3>
+              <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 text-sm">
+                <div className="break-words">
                   <span className="text-muted-foreground">Nome: </span>
                   <span className="font-medium text-foreground">
                     {user.displayName || userData?.nome || "—"}
                   </span>
                 </div>
-                <div>
+                <div className="break-words">
                   <span className="text-muted-foreground">E-mail: </span>
                   <span className="font-medium text-foreground">{user.email || "—"}</span>
                 </div>
