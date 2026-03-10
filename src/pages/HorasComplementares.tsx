@@ -15,6 +15,7 @@ import DashboardCards from "@/components/DashboardCards";
 import UploadDropzone from "@/components/UploadDropzone";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
+import ProgressoHoras from "@/components/ProgressoHoras";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
