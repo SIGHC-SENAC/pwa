@@ -112,10 +112,10 @@ const HorasComplementares: React.FC = () => {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || (user && !userData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="font-serif text-lg text-muted-foreground italic">(respirando...)</p>
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
