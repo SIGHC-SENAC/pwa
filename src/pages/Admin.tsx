@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth } from "@/lib/firebase";
 import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
 import {
   fetchAllCertificados,
@@ -67,7 +65,7 @@ function formatDate(ts: { seconds: number } | null): string {
 const ITEMS_PER_PAGE = 15;
 
 const Admin: React.FC = () => {
-  const { user, userData, loading: authLoading } = useAuth();
+  const { user, userData, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const isAdmin = userData?.role === "admin";
   const isMobile = useIsMobile();
@@ -213,7 +211,7 @@ const Admin: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={async () => { await signOut(auth); navigate("/login"); }}
+            onClick={async () => { await logout(); navigate("/login"); }}
             className="gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0"
           >
             <LogOut className="h-4 w-4" />
