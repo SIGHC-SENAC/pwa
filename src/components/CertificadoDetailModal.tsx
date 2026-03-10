@@ -62,7 +62,7 @@ const CertificadoDetailModal: React.FC<Props> = ({ cert, open, onClose }) => {
           <FileText className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground break-words">{cert.nomeArquivo}</p>
+          <p className="text-sm font-medium text-foreground break-words line-clamp-2 overflow-hidden">{cert.nomeArquivo}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {formatFileSize(cert.tamanhoBytes)} · {formatDate(cert.createdAt)}
           </p>
@@ -165,11 +165,11 @@ const CertificadoDetailModal: React.FC<Props> = ({ cert, open, onClose }) => {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md w-[calc(100%-2rem)] overflow-hidden p-0">
+        <DialogHeader className="px-4 pt-5 pb-0 sm:px-6">
           <DialogTitle className="text-lg font-bold text-primary">Detalhes do Certificado</DialogTitle>
         </DialogHeader>
-        {content}
+        <div className="max-h-[70vh] overflow-y-auto">{content}</div>
       </DialogContent>
     </Dialog>
   );
