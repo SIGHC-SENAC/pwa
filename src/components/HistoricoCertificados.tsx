@@ -65,7 +65,8 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
         return (
           <div
             key={cert.id}
-            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden"
+            onClick={() => setSelectedCert(cert)}
+            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden cursor-pointer active:scale-[0.99]"
           >
             {/* Main row */}
             <div className="flex items-start gap-2.5 sm:gap-3">
