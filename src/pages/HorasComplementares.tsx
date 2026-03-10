@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDownloadURL } from "firebase/storage";
 import { ref } from "firebase/storage";
+import { signOut } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
-import { storage } from "@/lib/firebase";
+import { auth, storage } from "@/lib/firebase";
 import {
   uploadCertificado,
   saveCertificadoMeta,
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Loader2, Send, ShieldAlert, GraduationCap } from "lucide-react";
+import { Loader2, Send, ShieldAlert, GraduationCap, LogOut } from "lucide-react";
 
 const HorasComplementares: React.FC = () => {
   const { user, userData, loading: authLoading, isAluno } = useAuth();
