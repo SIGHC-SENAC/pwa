@@ -124,6 +124,10 @@ const HorasComplementares: React.FC = () => {
   if (!user) return null;
 
   if (!isAluno) {
+    if (userData?.role === "admin") {
+      navigate("/admin");
+      return null;
+    }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">

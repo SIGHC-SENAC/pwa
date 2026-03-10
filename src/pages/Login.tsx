@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -21,8 +22,23 @@ const Login: React.FC = () => {
     }
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/");
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Check role to redirect appropriately
+      let role = "";
+      try {
+        const tokenResult = await cred.user.getIdTokenResult(true);
+        role = (tokenResult.claims.role as string) || "";
+      } catch {
+        try {
+          const userDoc = await getDoc(doc(db, "users", cred.user.uid));
+          if (userDoc.exists()) role = userDoc.data().role || "";
+        } catch {}
+      }
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
       toast.success("Login realizado com sucesso!");
     } catch (err: any) {
       console.error("Erro no login:", err);
