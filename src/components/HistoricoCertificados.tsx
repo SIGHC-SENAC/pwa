@@ -55,97 +55,97 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5 sm:space-y-3">
       {certificados.map((cert) => {
         const status = statusConfig[cert.status] || statusConfig.pendente;
         const StatusIcon = status.icon;
         return (
           <div
             key={cert.id}
-            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md"
+            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden"
           >
             {/* Main row */}
-            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-              <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex items-start gap-2.5 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{cert.nomeArquivo}</p>
-                <div className="mt-0.5 sm:mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                <p className="text-sm font-medium text-foreground line-clamp-2 break-all">{cert.nomeArquivo}</p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-muted-foreground">
                   <span>{formatDate(cert.createdAt)}</span>
                   <span className="hidden sm:inline">•</span>
                   <span className="hidden sm:inline">{formatFileSize(cert.tamanhoBytes)}</span>
                 </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 flex-col sm:flex-row">
-                <Badge variant="outline" className={`${status.className} text-[10px] sm:text-xs`}>
-                  <StatusIcon className="h-3 w-3 mr-0.5 sm:mr-1" />
-                  {status.label}
-                </Badge>
-                {cert.downloadURL && (
-                  <Button variant="ghost" size="icon" asChild className="h-7 w-7 sm:h-8 sm:w-8">
-                    <a href={cert.downloadURL} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </a>
-                  </Button>
-                )}
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <Badge variant="outline" className={`${status.className} text-[10px] sm:text-xs whitespace-nowrap`}>
+                    <StatusIcon className="h-3 w-3 mr-0.5" />
+                    {status.label}
+                  </Badge>
+                  {cert.downloadURL && (
+                    <Button variant="ghost" size="icon" asChild className="h-6 w-6 sm:h-7 sm:w-7">
+                      <a href={cert.downloadURL} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Analysis result details */}
             {cert.status === "aprovado" && (
-              <div className="mt-2.5 sm:mt-3 ml-12 sm:ml-14 rounded-md bg-success/5 border border-success/20 p-2.5 sm:p-3 space-y-1">
-                <p className="text-sm font-medium text-success flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+              <div className="mt-2 ml-[42px] sm:ml-[52px] rounded-md bg-success/5 border border-success/20 p-2 sm:p-2.5 space-y-0.5">
+                <p className="text-xs sm:text-sm font-medium text-success flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 shrink-0" />
                   Aprovado
                 </p>
                 {cert.horasAprovadas != null && cert.horasAprovadas > 0 && (
-                  <p className="text-sm text-foreground">
-                    Horas validadas: <span className="font-semibold">{cert.horasAprovadas}h</span>
+                  <p className="text-xs sm:text-sm text-foreground">
+                    Horas: <span className="font-semibold">{cert.horasAprovadas}h</span>
                   </p>
                 )}
                 {cert.observacaoAdmin && (
-                  <p className="text-xs text-muted-foreground break-words">Observação: {cert.observacaoAdmin}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground break-words overflow-hidden">Obs: {cert.observacaoAdmin}</p>
                 )}
                 {cert.nomeAdmin && cert.dataAnalise && (
-                  <p className="text-xs text-muted-foreground">
-                    Analisado por {cert.nomeAdmin} em {formatDate(cert.dataAnalise)}
+                  <p className="text-[10px] sm:text-xs text-muted-foreground break-words overflow-hidden">
+                    Por {cert.nomeAdmin} · {formatDate(cert.dataAnalise)}
                   </p>
                 )}
               </div>
             )}
 
             {cert.status === "rejeitado" && (
-              <div className="mt-2.5 sm:mt-3 ml-12 sm:ml-14 rounded-md bg-destructive/5 border border-destructive/20 p-2.5 sm:p-3 space-y-1">
-                <p className="text-sm font-medium text-destructive flex items-center gap-1.5">
-                  <XCircle className="h-3.5 w-3.5" />
+              <div className="mt-2 ml-[42px] sm:ml-[52px] rounded-md bg-destructive/5 border border-destructive/20 p-2 sm:p-2.5 space-y-0.5">
+                <p className="text-xs sm:text-sm font-medium text-destructive flex items-center gap-1">
+                  <XCircle className="h-3 w-3 shrink-0" />
                   Não aprovado
                 </p>
                 {cert.motivoRejeicao && (
-                  <p className="text-sm text-foreground break-words">Motivo: {cert.motivoRejeicao}</p>
+                  <p className="text-xs sm:text-sm text-foreground break-words overflow-hidden">Motivo: {cert.motivoRejeicao}</p>
                 )}
                 {cert.observacaoAdmin && (
-                  <p className="text-xs text-muted-foreground break-words">Observação: {cert.observacaoAdmin}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground break-words overflow-hidden">Obs: {cert.observacaoAdmin}</p>
                 )}
                 {cert.nomeAdmin && cert.dataAnalise && (
-                  <p className="text-xs text-muted-foreground">
-                    Analisado por {cert.nomeAdmin} em {formatDate(cert.dataAnalise)}
+                  <p className="text-[10px] sm:text-xs text-muted-foreground break-words overflow-hidden">
+                    Por {cert.nomeAdmin} · {formatDate(cert.dataAnalise)}
                   </p>
                 )}
               </div>
             )}
 
             {cert.status === "pendente" && (
-              <div className="mt-2.5 sm:mt-3 ml-12 sm:ml-14 rounded-md bg-secondary/10 border border-secondary/20 p-2.5 sm:p-3">
-                <p className="text-sm text-secondary flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
+              <div className="mt-2 ml-[42px] sm:ml-[52px] rounded-md bg-secondary/10 border border-secondary/20 p-2 sm:p-2.5">
+                <p className="text-xs sm:text-sm text-secondary flex items-center gap-1">
+                  <Clock className="h-3 w-3 shrink-0" />
                   Aguardando análise
                 </p>
               </div>
             )}
 
             {cert.observacaoAluno && (
-              <p className="mt-1.5 sm:mt-2 ml-12 sm:ml-14 text-xs text-muted-foreground italic break-words">
+              <p className="mt-1.5 ml-[42px] sm:ml-[52px] text-[11px] sm:text-xs text-muted-foreground italic break-words overflow-hidden">
                 "{cert.observacaoAluno}"
               </p>
             )}
