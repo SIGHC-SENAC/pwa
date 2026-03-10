@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, ChevronDown } from "lucide-react";
 import senacLogo from "@/assets/senac-logo.png";
+import NotificationBell from "@/components/NotificationBell";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AlunoHeaderProps {
   userName: string;
