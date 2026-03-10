@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
-import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
 import {
   fetchAllCertificados,
   aprovarCertificado,
