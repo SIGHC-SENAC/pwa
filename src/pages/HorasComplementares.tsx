@@ -190,6 +190,15 @@ const HorasComplementares: React.FC = () => {
         {/* Summary cards */}
         <DashboardCards certificados={certificados} loading={histLoading} />
 
+        {/* Progress bar */}
+        <ProgressoHoras
+          horasAprovadas={certificados.reduce(
+            (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
+            0
+          )}
+          loading={histLoading}
+        />
+
         {/* Main content */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column */}
