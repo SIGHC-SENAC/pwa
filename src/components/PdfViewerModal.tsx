@@ -29,7 +29,7 @@ interface PdfViewerModalProps {
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pendente: { label: "Pendente", className: "bg-warning/15 text-warning border-warning/30" },
+  pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
   aprovado: { label: "Aprovado", className: "bg-success/15 text-success border-success/30" },
   rejeitado: { label: "Rejeitado", className: "bg-destructive/15 text-destructive border-destructive/30" },
 };
@@ -136,7 +136,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     <div className="overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif font-semibold text-foreground text-sm sm:text-base">Dados do envio</h3>
+          <h3 className="font-semibold text-foreground text-sm sm:text-base">Dados do envio</h3>
           <Badge variant="outline" className={status.className}>{status.label}</Badge>
         </div>
 
@@ -168,7 +168,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 
       {/* Analysis fields */}
       <div className="space-y-3 sm:space-y-4">
-        <h3 className="font-serif font-semibold text-foreground text-sm sm:text-base">Análise</h3>
+        <h3 className="font-semibold text-foreground text-sm sm:text-base">Análise</h3>
 
         <div>
           <label className="text-sm font-medium text-foreground">Horas aprovadas</label>
@@ -208,7 +208,6 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           />
         </div>
 
-        {/* Show previous analysis info if already analyzed */}
         {!isPendente && cert.nomeAdmin && (
           <div className="text-xs text-muted-foreground space-y-1 bg-muted rounded-md p-3">
             <p>Analisado por: <span className="font-medium text-foreground">{cert.nomeAdmin}</span></p>
@@ -249,13 +248,12 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     </div>
   );
 
-  // Mobile: use Drawer for fullscreen-like experience
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
         <DrawerContent className="max-h-[92vh] mx-2 flex flex-col rounded-t-2xl">
-          <DrawerHeader className="px-4 pb-2 shrink-0">
-            <DrawerTitle className="font-serif text-lg">Análise do Certificado</DrawerTitle>
+          <DrawerHeader className="px-4 pb-2 shrink-0 border-b border-primary/10">
+            <DrawerTitle className="text-lg font-bold text-primary">Análise do Certificado</DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto">
             <div className="h-[300px]">
@@ -268,21 +266,17 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     );
   }
 
-  // Desktop: Dialog with side-by-side layout
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-6xl w-[calc(100%-2rem)] h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="font-serif text-xl">Análise do Certificado</DialogTitle>
+        <DialogHeader className="px-6 pt-5 pb-4 border-b shrink-0 bg-primary/5">
+          <DialogTitle className="text-xl font-bold text-primary">Análise do Certificado</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 flex flex-row overflow-hidden">
-          {/* PDF Viewer */}
           <div className="flex-1 min-h-0 bg-muted relative border-r">
             {pdfViewer}
           </div>
-
-          {/* Details & Actions */}
           <div className="w-[380px] shrink-0 overflow-y-auto">
             {detailsPanel}
           </div>

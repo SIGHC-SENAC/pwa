@@ -23,7 +23,6 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Check role to redirect appropriately
       let role = "";
       try {
         const tokenResult = await cred.user.getIdTokenResult(true);
@@ -53,17 +52,20 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      {/* Top accent bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-secondary" />
+
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <GraduationCap className="h-7 w-7 text-primary" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg">
+            <GraduationCap className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="mt-4 font-serif text-2xl font-bold text-foreground">Entrar</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta para continuar</p>
+          <h1 className="mt-5 text-2xl font-bold text-foreground">Horas Complementares</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Acesse sua conta para continuar</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4 rounded-xl border bg-card p-6 shadow-sm">
           <div>
             <label htmlFor="email" className="text-sm font-medium text-foreground">E-mail</label>
             <Input
@@ -99,6 +101,10 @@ const Login: React.FC = () => {
             )}
           </Button>
         </form>
+
+        <p className="text-center text-xs text-muted-foreground">
+          Faculdade Senac Pernambuco
+        </p>
       </div>
     </div>
   );

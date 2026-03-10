@@ -133,7 +133,7 @@ const HorasComplementares: React.FC = () => {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <ShieldAlert className="h-8 w-8 text-destructive" />
         </div>
-        <h1 className="font-serif text-2xl font-semibold text-foreground">Acesso restrito</h1>
+        <h1 className="text-2xl font-bold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
           Esta página é exclusiva para alunos. Entre em contato com a coordenação se acredita que isso é um erro.
         </p>
@@ -144,15 +144,15 @@ const HorasComplementares: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:py-6 sm:px-6">
+      <header className="bg-primary text-primary-foreground shadow-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:py-4 sm:px-6">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
+              <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-serif text-lg sm:text-2xl font-bold text-foreground">Horas Complementares</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Envie seu certificado em PDF para análise</p>
+              <h1 className="text-lg sm:text-xl font-bold text-primary-foreground">Horas Complementares</h1>
+              <p className="text-xs sm:text-sm text-primary-foreground/70 hidden sm:block">Envie seu certificado em PDF para análise</p>
             </div>
           </div>
           <Button
@@ -162,12 +162,14 @@ const HorasComplementares: React.FC = () => {
               await signOut(auth);
               navigate("/login");
             }}
-            className="gap-2 text-muted-foreground hover:text-destructive shrink-0"
+            className="gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Sair</span>
           </Button>
         </div>
+        {/* Orange accent line */}
+        <div className="h-1 bg-secondary" />
       </header>
 
       <main className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
@@ -175,7 +177,7 @@ const HorasComplementares: React.FC = () => {
           {/* Upload Card */}
           <div className="lg:col-span-2 space-y-5 sm:space-y-6">
             <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
-              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Enviar certificado</h2>
+              <h2 className="text-base sm:text-lg font-bold text-foreground">Enviar certificado</h2>
               <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                 Selecione ou arraste um arquivo PDF para enviar
               </p>
@@ -242,7 +244,7 @@ const HorasComplementares: React.FC = () => {
 
             {/* Histórico */}
             <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
-              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Histórico de envios</h2>
+              <h2 className="text-base sm:text-lg font-bold text-foreground">Histórico de envios</h2>
               <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                 Acompanhe o status dos seus certificados
               </p>
@@ -257,7 +259,7 @@ const HorasComplementares: React.FC = () => {
             <CardOrientacoes />
 
             <div className="rounded-xl border bg-card p-4 sm:p-6">
-              <h3 className="font-serif text-base sm:text-lg font-semibold text-foreground">Seu perfil</h3>
+              <h3 className="text-base sm:text-lg font-bold text-foreground">Seu perfil</h3>
               <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 text-sm">
                 <div className="break-words">
                   <span className="text-muted-foreground">Nome: </span>

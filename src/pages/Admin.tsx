@@ -50,7 +50,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pendente: { label: "Pendente", className: "bg-warning/15 text-warning border-warning/30" },
+  pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
   aprovado: { label: "Aprovado", className: "bg-success/15 text-success border-success/30" },
   rejeitado: { label: "Rejeitado", className: "bg-destructive/15 text-destructive border-destructive/30" },
 };
@@ -117,7 +117,6 @@ const Admin: React.FC = () => {
     await loadData();
   };
 
-  // Summary stats
   const stats = useMemo(() => {
     const total = certificados.length;
     const pendentes = certificados.filter((c) => c.status === "pendente").length;
@@ -127,7 +126,6 @@ const Admin: React.FC = () => {
     return { total, pendentes, aprovados, rejeitados, horasTotal };
   }, [certificados]);
 
-  // Student grouping
   const alunosSummary = useMemo(() => {
     const map = new Map<string, { nome: string; email: string; total: number; aprovados: number; rejeitados: number; pendentes: number; horas: number }>();
     certificados.forEach((c) => {
@@ -141,13 +139,10 @@ const Admin: React.FC = () => {
     return map;
   }, [certificados]);
 
-  // Filtered & sorted
   const filtered = useMemo(() => {
     let result = [...certificados];
-
     if (alunoView) result = result.filter((c) => c.uid === alunoView);
     if (statusFilter !== "todos") result = result.filter((c) => c.status === statusFilter);
-
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter(
@@ -157,11 +152,9 @@ const Admin: React.FC = () => {
           c.nomeArquivo.toLowerCase().includes(q)
       );
     }
-
     if (sortOrder === "recente") result.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
     else if (sortOrder === "antigo") result.sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
     else if (sortOrder === "az") result.sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
-
     return result;
   }, [certificados, statusFilter, searchTerm, sortOrder, alunoView]);
 
@@ -186,7 +179,7 @@ const Admin: React.FC = () => {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <ShieldAlert className="h-8 w-8 text-destructive" />
         </div>
-        <h1 className="font-serif text-2xl font-semibold text-foreground">Acesso restrito</h1>
+        <h1 className="text-2xl font-bold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
           Esta página é exclusiva para administradores.
         </p>
@@ -196,47 +189,49 @@ const Admin: React.FC = () => {
   }
 
   const summaryCards = [
-    { label: "Total", value: stats.total, icon: FileText, color: "text-primary" },
-    { label: "Pendentes", value: stats.pendentes, icon: Clock, color: "text-warning" },
-    { label: "Aprovados", value: stats.aprovados, icon: CheckCircle2, color: "text-success" },
-    { label: "Rejeitados", value: stats.rejeitados, icon: XCircle, color: "text-destructive" },
-    { label: "Horas aprovadas", value: stats.horasTotal, icon: Award, color: "text-primary" },
+    { label: "Total", value: stats.total, icon: FileText, bgColor: "bg-primary/10", iconColor: "text-primary" },
+    { label: "Pendentes", value: stats.pendentes, icon: Clock, bgColor: "bg-secondary/10", iconColor: "text-secondary" },
+    { label: "Aprovados", value: stats.aprovados, icon: CheckCircle2, bgColor: "bg-success/10", iconColor: "text-success" },
+    { label: "Rejeitados", value: stats.rejeitados, icon: XCircle, bgColor: "bg-destructive/10", iconColor: "text-destructive" },
+    { label: "Horas aprovadas", value: stats.horasTotal, icon: Award, bgColor: "bg-secondary/10", iconColor: "text-secondary" },
   ];
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:py-5 sm:px-6">
+      <header className="bg-primary text-primary-foreground shadow-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:py-4 sm:px-6">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-serif text-lg sm:text-2xl font-bold text-foreground truncate">Análise de Horas</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Gerencie os certificados enviados pelos alunos</p>
+              <h1 className="text-lg sm:text-xl font-bold text-primary-foreground truncate">Análise de Horas</h1>
+              <p className="text-xs sm:text-sm text-primary-foreground/70 hidden sm:block">Gerencie os certificados enviados pelos alunos</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={async () => { await signOut(auth); navigate("/login"); }}
-            className="gap-2 text-muted-foreground hover:text-destructive shrink-0"
+            className="gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Sair</span>
           </Button>
         </div>
+        {/* Orange accent line */}
+        <div className="h-1 bg-secondary" />
       </header>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {summaryCards.map((s) => (
-            <Card key={s.label} className="shadow-sm">
+            <Card key={s.label} className="shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-                <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-muted ${s.color}`}>
-                  <s.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${s.bgColor}`}>
+                  <s.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.iconColor}`} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p>
@@ -251,7 +246,7 @@ const Admin: React.FC = () => {
         {alunoView && (() => {
           const al = alunosSummary.get(alunoView);
           return al ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border bg-card p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border-l-4 border-l-secondary bg-card p-3 sm:p-4 shadow-sm">
               <div className="text-sm min-w-0">
                 <span className="text-muted-foreground">Aluno: </span>
                 <span className="font-semibold text-foreground">{al.nome}</span>
@@ -306,7 +301,7 @@ const Admin: React.FC = () => {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center px-4">
               <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/40" />
-              <p className="mt-4 font-serif text-base sm:text-lg font-medium text-foreground">Nenhum certificado encontrado</p>
+              <p className="mt-4 text-base sm:text-lg font-bold text-foreground">Nenhum certificado encontrado</p>
               <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos envios</p>
             </div>
           ) : (
@@ -359,21 +354,21 @@ const Admin: React.FC = () => {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead>Aluno</TableHead>
-                        <TableHead className="hidden md:table-cell">Arquivo</TableHead>
-                        <TableHead className="hidden sm:table-cell">Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden lg:table-cell">Horas</TableHead>
-                        <TableHead className="hidden xl:table-cell">Analisado por</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+                      <TableRow className="bg-primary/5">
+                        <TableHead className="text-primary font-semibold">Aluno</TableHead>
+                        <TableHead className="hidden md:table-cell text-primary font-semibold">Arquivo</TableHead>
+                        <TableHead className="hidden sm:table-cell text-primary font-semibold">Data</TableHead>
+                        <TableHead className="text-primary font-semibold">Status</TableHead>
+                        <TableHead className="hidden lg:table-cell text-primary font-semibold">Horas</TableHead>
+                        <TableHead className="hidden xl:table-cell text-primary font-semibold">Analisado por</TableHead>
+                        <TableHead className="text-right text-primary font-semibold">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginated.map((cert) => {
                         const st = statusConfig[cert.status] || statusConfig.pendente;
                         return (
-                          <TableRow key={cert.id} className="group">
+                          <TableRow key={cert.id} className="group hover:bg-muted/50 transition-colors">
                             <TableCell>
                               <button
                                 onClick={() => setAlunoView(cert.uid)}
@@ -458,14 +453,14 @@ const Admin: React.FC = () => {
           <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
               <Users className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Resumo por aluno</h2>
+              <h2 className="text-base sm:text-lg font-bold text-foreground">Resumo por aluno</h2>
             </div>
             <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from(alunosSummary.entries()).map(([uid, al]) => (
                 <button
                   key={uid}
                   onClick={() => setAlunoView(uid)}
-                  className="text-left rounded-lg border p-3 sm:p-4 transition-shadow hover:shadow-md bg-background"
+                  className="text-left rounded-lg border p-3 sm:p-4 transition-all hover:shadow-md hover:border-primary/30 bg-background"
                 >
                   <p className="font-medium text-foreground text-sm truncate">{al.nome}</p>
                   <p className="text-xs text-muted-foreground mb-2 truncate">{al.email}</p>
@@ -473,7 +468,7 @@ const Admin: React.FC = () => {
                     <span className="rounded-full bg-muted px-2 py-0.5">{al.total} envios</span>
                     <span className="rounded-full bg-success/15 text-success px-2 py-0.5">{al.aprovados} aprov.</span>
                     <span className="rounded-full bg-destructive/15 text-destructive px-2 py-0.5">{al.rejeitados} rej.</span>
-                    <span className="rounded-full bg-warning/15 text-warning px-2 py-0.5">{al.pendentes} pend.</span>
+                    <span className="rounded-full bg-secondary/15 text-secondary px-2 py-0.5">{al.pendentes} pend.</span>
                     <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 font-medium">{al.horas}h</span>
                   </div>
                 </button>

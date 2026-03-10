@@ -10,7 +10,7 @@ interface HistoricoCertificadosProps {
 }
 
 const statusConfig = {
-  pendente: { label: "Pendente", className: "bg-warning/15 text-warning border-warning/30", icon: Clock },
+  pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30", icon: Clock },
   aprovado: { label: "Aprovado", className: "bg-success/15 text-success border-success/30", icon: CheckCircle2 },
   rejeitado: { label: "Não aprovado", className: "bg-destructive/15 text-destructive border-destructive/30", icon: XCircle },
 };
@@ -46,7 +46,7 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
         <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-muted">
           <Inbox className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground" />
         </div>
-        <p className="mt-3 sm:mt-4 font-serif text-base sm:text-lg font-medium text-foreground">Nenhum certificado enviado</p>
+        <p className="mt-3 sm:mt-4 text-base sm:text-lg font-bold text-foreground">Nenhum certificado enviado</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Seus certificados aparecerão aqui após o envio
         </p>
@@ -62,7 +62,7 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
         return (
           <div
             key={cert.id}
-            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-sm"
+            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md"
           >
             {/* Main row */}
             <div className="flex items-start sm:items-center gap-3 sm:gap-4">
@@ -136,8 +136,8 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
             )}
 
             {cert.status === "pendente" && (
-              <div className="mt-2.5 sm:mt-3 ml-12 sm:ml-14 rounded-md bg-warning/5 border border-warning/20 p-2.5 sm:p-3">
-                <p className="text-sm text-warning flex items-center gap-1.5">
+              <div className="mt-2.5 sm:mt-3 ml-12 sm:ml-14 rounded-md bg-secondary/10 border border-secondary/20 p-2.5 sm:p-3">
+                <p className="text-sm text-secondary flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
                   Aguardando análise
                 </p>
