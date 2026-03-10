@@ -65,7 +65,7 @@ function formatDate(ts: { seconds: number } | null): string {
 const ITEMS_PER_PAGE = 15;
 
 const Admin: React.FC = () => {
-  const { user, userData, loading: authLoading } = useAuth();
+  const { user, userData, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const isAdmin = userData?.role === "admin";
   const isMobile = useIsMobile();
