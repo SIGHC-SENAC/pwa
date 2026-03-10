@@ -30,6 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -46,8 +53,11 @@ import {
   ChevronRight,
   Shield,
   Users,
+  User,
+  ChevronDown,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import senacLogo from "@/assets/senac-logo.png";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
