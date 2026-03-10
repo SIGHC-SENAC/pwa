@@ -74,6 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserData(null);
           }
         }
+
+        // Sync FCM token silently after auth
+        requestAndSyncFcmToken(firebaseUser.uid).catch((e) =>
+          console.warn("[FCM] Sync silencioso falhou:", e)
+        );
       } else {
         setUserData(null);
       }
@@ -85,8 +90,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAluno = userData?.role === "aluno";
 
+  const logout = async () => {
+    if (user) {
+      await deactivateCurrentToken(user.uid).catch(() => {});
+    }
+    await signOut(auth);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userData, loading, isAluno }}>
+    <AuthContext.Provider value={{ user, userData, loading, isAluno, logout }}>
       {children}
     </AuthContext.Provider>
   );
