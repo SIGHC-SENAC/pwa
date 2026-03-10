@@ -58,6 +58,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import senacLogo from "@/assets/senac-logo.png";
+import NotificationBell from "@/components/NotificationBell";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },

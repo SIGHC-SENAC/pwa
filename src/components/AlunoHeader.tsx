@@ -101,7 +101,8 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
               {loggingOut ? "Saindo..." : "Sair do sistema"}
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       </div>
       {/* Accent bar */}
       <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
