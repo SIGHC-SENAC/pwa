@@ -211,7 +211,7 @@ const Admin: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={async () => { await signOut(auth); navigate("/login"); }}
+            onClick={async () => { await logout(); navigate("/login"); }}
             className="gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0"
           >
             <LogOut className="h-4 w-4" />
