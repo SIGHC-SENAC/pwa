@@ -16,15 +16,10 @@ import FloatingUploadButton from "@/components/FloatingUploadButton";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
 import ProgressoHoras from "@/components/ProgressoHoras";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   Loader2,
-  Send,
   ShieldAlert,
-  Upload,
   History,
   BookOpen,
 } from "lucide-react";
