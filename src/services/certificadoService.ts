@@ -92,16 +92,36 @@ export async function getDownloadURLFromPath(storagePath: string): Promise<strin
 }
 
 export async function fetchCertificados(uid: string): Promise<CertificadoMeta[]> {
-  const q = query(
-    collection(db, COLLECTION),
-    where("uid", "==", uid),
-    orderBy("createdAt", "desc")
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as CertificadoMeta[];
+  try {
+    const q = query(
+      collection(db, COLLECTION),
+      where("uid", "==", uid),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as CertificadoMeta[];
+  } catch (err) {
+    console.warn("Query com orderBy falhou (índice composto necessário?), tentando sem orderBy:", err);
+    // Fallback: query without orderBy (no composite index needed)
+    const q = query(
+      collection(db, COLLECTION),
+      where("uid", "==", uid)
+    );
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as CertificadoMeta[];
+    // Sort client-side
+    return docs.sort((a, b) => {
+      const ta = a.createdAt?.seconds ?? 0;
+      const tb = b.createdAt?.seconds ?? 0;
+      return tb - ta;
+    });
+  }
 }
 
 export function formatFileSize(bytes: number): string {
