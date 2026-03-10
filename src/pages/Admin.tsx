@@ -230,8 +230,10 @@ const Admin: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: User menu */}
-          <DropdownMenu>
+          {/* Right: Notification + User menu */}
+          <div className="flex items-center gap-1">
+            <NotificationBell userId={user?.uid} />
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
