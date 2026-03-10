@@ -38,6 +38,7 @@ const HorasComplementares: React.FC = () => {
       const data = await fetchCertificados(user.uid);
       setCertificados(data);
     } catch (err) {
+      toast.error("Erro ao carregar histórico de certificados.");
       console.error("Erro ao carregar histórico:", err);
     } finally {
       setHistLoading(false);
