@@ -165,11 +165,11 @@ const CertificadoDetailModal: React.FC<Props> = ({ cert, open, onClose }) => {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md w-[calc(100%-2rem)] overflow-hidden p-0">
+        <DialogHeader className="px-4 pt-5 pb-0 sm:px-6">
           <DialogTitle className="text-lg font-bold text-primary">Detalhes do Certificado</DialogTitle>
         </DialogHeader>
-        {content}
+        <div className="max-h-[70vh] overflow-y-auto">{content}</div>
       </DialogContent>
     </Dialog>
   );
