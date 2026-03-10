@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   userData: null,
   loading: true,
   isAluno: false,
+  logout: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
