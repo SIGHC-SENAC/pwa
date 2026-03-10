@@ -209,29 +209,70 @@ const Admin: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:py-4 sm:px-6">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
-              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-primary-foreground truncate">Análise de Horas</h1>
-              <p className="text-xs sm:text-sm text-primary-foreground/70 hidden sm:block">Gerencie os certificados enviados pelos alunos</p>
+      <header className="sticky top-0 z-40 border-b bg-card shadow-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
+          {/* Left: Logo + System Name */}
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src={senacLogo}
+              alt="Senac Pernambuco"
+              className="h-9 sm:h-10 w-auto object-contain"
+            />
+            <div className="hidden sm:block h-8 w-px bg-border" />
+            <div className="hidden sm:block min-w-0">
+              <p className="text-sm font-bold text-primary leading-tight">
+                Painel Administrativo
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Análise de Horas Complementares
+              </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => { await signOut(auth); navigate("/login"); }}
-            className="gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </Button>
+
+          {/* Right: User menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2 px-2 sm:px-3 h-auto py-1.5 hover:bg-muted"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                  <Shield className="h-4 w-4" />
+                </div>
+                <div className="hidden md:block text-left min-w-0">
+                  <p className="text-sm font-medium text-foreground leading-tight truncate max-w-[160px]">
+                    {userData?.nome || user.displayName || "Admin"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-tight truncate max-w-[160px]">
+                    {user.email}
+                  </p>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2 md:hidden">
+                <p className="text-sm font-medium text-foreground truncate">{userData?.nome || user.displayName || "Admin"}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+              <DropdownMenuSeparator className="md:hidden" />
+              <DropdownMenuItem disabled>
+                <User className="h-4 w-4 mr-2" />
+                Meu perfil
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => { await signOut(auth); navigate("/login"); }}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair do sistema
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {/* Orange accent line */}
-        <div className="h-1 bg-secondary" />
+        {/* Accent bar */}
+        <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
       </header>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
