@@ -15,6 +15,7 @@ import DashboardCards from "@/components/DashboardCards";
 import FloatingUploadButton from "@/components/FloatingUploadButton";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import ProgressoHoras from "@/components/ProgressoHoras";
 import { toast } from "sonner";
 import {
