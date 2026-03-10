@@ -12,19 +12,14 @@ import {
 } from "@/services/certificadoService";
 import AlunoHeader from "@/components/AlunoHeader";
 import DashboardCards from "@/components/DashboardCards";
-import UploadDropzone from "@/components/UploadDropzone";
+import FloatingUploadButton from "@/components/FloatingUploadButton";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
 import ProgressoHoras from "@/components/ProgressoHoras";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   Loader2,
-  Send,
   ShieldAlert,
-  Upload,
   History,
   BookOpen,
 } from "lucide-react";
@@ -203,90 +198,6 @@ const HorasComplementares: React.FC = () => {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Upload section */}
-            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                  <Upload className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-sm sm:text-base font-bold text-foreground">
-                    Enviar certificado
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Selecione ou arraste um arquivo PDF
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-4 sm:p-6 space-y-4">
-                <UploadDropzone
-                  file={file}
-                  onFileSelect={setFile}
-                  onFileRemove={() => setFile(null)}
-                  disabled={uploading}
-                />
-
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground"
-                    htmlFor="observacao"
-                  >
-                    Observação{" "}
-                    <span className="text-muted-foreground font-normal">
-                      (opcional)
-                    </span>
-                  </label>
-                  <Textarea
-                    id="observacao"
-                    value={observacao}
-                    onChange={(e) => setObservacao(e.target.value)}
-                    placeholder="Descreva o certificado, evento ou atividade..."
-                    className="mt-1.5 resize-none"
-                    rows={3}
-                    maxLength={500}
-                    disabled={uploading}
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground text-right">
-                    {observacao.length}/500
-                  </p>
-                </div>
-
-                {uploading && (
-                  <div className="animate-fade-in space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Enviando...
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {progress}%
-                      </span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleUpload}
-                  disabled={!file || uploading}
-                  className="w-full sm:w-auto"
-                  size="lg"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4" />
-                      Enviar certificado
-                    </>
-                  )}
-                </Button>
-              </div>
-            </section>
-
             {/* History section */}
             <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
               <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
@@ -313,7 +224,6 @@ const HorasComplementares: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Orientações */}
             <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
               <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -329,6 +239,18 @@ const HorasComplementares: React.FC = () => {
             </section>
           </div>
         </div>
+
+        {/* Floating upload button */}
+        <FloatingUploadButton
+          file={file}
+          onFileSelect={setFile}
+          onFileRemove={() => setFile(null)}
+          observacao={observacao}
+          onObservacaoChange={setObservacao}
+          uploading={uploading}
+          progress={progress}
+          onUpload={handleUpload}
+        />
       </main>
     </div>
   );
