@@ -58,6 +58,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import senacLogo from "@/assets/senac-logo.png";
+import NotificationBell from "@/components/NotificationBell";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
@@ -229,8 +230,10 @@ const Admin: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: User menu */}
-          <DropdownMenu>
+          {/* Right: Notification + User menu */}
+          <div className="flex items-center gap-1">
+            <NotificationBell userId={user?.uid} />
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -269,7 +272,8 @@ const Admin: React.FC = () => {
                 Sair do sistema
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+            </DropdownMenu>
+          </div>
         </div>
         {/* Accent bar */}
         <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />

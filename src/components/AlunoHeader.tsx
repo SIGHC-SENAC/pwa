@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, ChevronDown } from "lucide-react";
 import senacLogo from "@/assets/senac-logo.png";
+import NotificationBell from "@/components/NotificationBell";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AlunoHeaderProps {
   userName: string;
@@ -56,8 +58,10 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
           </div>
         </div>
 
-        {/* Right: User menu */}
-        <DropdownMenu>
+        {/* Right: Notification + User menu */}
+        <div className="flex items-center gap-1">
+          <NotificationBell userId={useAuth().user?.uid} />
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -97,7 +101,8 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
               {loggingOut ? "Saindo..." : "Sair do sistema"}
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       </div>
       {/* Accent bar */}
       <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
