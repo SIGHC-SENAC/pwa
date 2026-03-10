@@ -39,7 +39,7 @@ const Login: React.FC = () => {
       } else {
         navigate("/");
       }
-    } catch (err: any) {
+    toast.success("Login realizado com sucesso!");
       console.error("Erro no login:", err);
       if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
         toast.error("E-mail ou senha inválidos.");
