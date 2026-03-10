@@ -29,6 +29,7 @@ interface FloatingUploadButtonProps {
   uploading: boolean;
   progress: number;
   onUpload: () => void;
+  onSuccess?: () => void;
 }
 
 const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
