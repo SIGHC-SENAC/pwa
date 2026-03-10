@@ -31,6 +31,8 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
   certificados,
   loading,
 }) => {
+  const [selectedCert, setSelectedCert] = useState<CertificadoMeta | null>(null);
+
   if (loading) {
     return (
       <div className="space-y-3">
