@@ -2,15 +2,16 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDownloadURL } from "firebase/storage";
 import { ref } from "firebase/storage";
-import { signOut } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth, storage } from "@/lib/firebase";
+import { storage } from "@/lib/firebase";
 import {
   uploadCertificado,
   saveCertificadoMeta,
   fetchCertificados,
   CertificadoMeta,
 } from "@/services/certificadoService";
+import AlunoHeader from "@/components/AlunoHeader";
+import DashboardCards from "@/components/DashboardCards";
 import UploadDropzone from "@/components/UploadDropzone";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
@@ -18,7 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Loader2, Send, ShieldAlert, GraduationCap, LogOut } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  ShieldAlert,
+  Upload,
+  History,
+  BookOpen,
+} from "lucide-react";
 
 const HorasComplementares: React.FC = () => {
   const { user, userData, loading: authLoading, isAluno } = useAuth();
@@ -100,7 +108,9 @@ const HorasComplementares: React.FC = () => {
             loadCertificados();
           } catch (err) {
             console.error("Erro ao salvar metadados:", err);
-            toast.error("O arquivo foi enviado, mas houve um erro ao salvar os dados.");
+            toast.error(
+              "O arquivo foi enviado, mas houve um erro ao salvar os dados."
+            );
           } finally {
             setUploading(false);
           }
@@ -113,6 +123,7 @@ const HorasComplementares: React.FC = () => {
     }
   };
 
+  // Loading state
   if (authLoading || (user && !userData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -123,6 +134,7 @@ const HorasComplementares: React.FC = () => {
 
   if (!user) return null;
 
+  // Not aluno
   if (!isAluno) {
     if (userData?.role === "admin") {
       navigate("/admin");
@@ -135,92 +147,115 @@ const HorasComplementares: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
-          Esta página é exclusiva para alunos. Entre em contato com a coordenação se acredita que isso é um erro.
+          Esta página é exclusiva para alunos. Entre em contato com a
+          coordenação se acredita que isso é um erro.
         </p>
       </div>
     );
   }
 
+  const userName = user.displayName || userData?.nome || "Aluno";
+  const userEmail = user.email || userData?.email || "";
+
+  const today = new Date().toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:py-4 sm:px-6">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
-              <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-primary-foreground">Horas Complementares</h1>
-              <p className="text-xs sm:text-sm text-primary-foreground/70 hidden sm:block">Envie seu certificado em PDF para análise</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => {
-              await signOut(auth);
-              navigate("/login");
-            }}
-            className="gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </Button>
-        </div>
-        {/* Orange accent line */}
-        <div className="h-1 bg-secondary" />
-      </header>
+      <AlunoHeader userName={userName} userEmail={userEmail} />
 
-      <main className="mx-auto max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
-        <div className="grid gap-5 sm:gap-8 lg:grid-cols-3">
-          {/* Upload Card */}
-          <div className="lg:col-span-2 space-y-5 sm:space-y-6">
-            <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
-              <h2 className="text-base sm:text-lg font-bold text-foreground">Enviar certificado</h2>
-              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                Selecione ou arraste um arquivo PDF para enviar
+      <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 space-y-6 sm:space-y-8">
+        {/* Welcome */}
+        <div className="animate-fade-in rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 sm:p-7 text-primary-foreground shadow-md">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">
+                Olá, {userName.split(" ")[0]}! 👋
+              </h1>
+              <p className="mt-1 text-sm text-primary-foreground/80">
+                Acompanhe seus certificados e horas complementares
               </p>
+            </div>
+            <p className="text-xs sm:text-sm text-primary-foreground/60 capitalize">
+              {today}
+            </p>
+          </div>
+        </div>
 
-              <div className="mt-4 sm:mt-5">
+        {/* Summary cards */}
+        <DashboardCards certificados={certificados} loading={histLoading} />
+
+        {/* Main content */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Upload section */}
+            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Upload className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-foreground">
+                    Enviar certificado
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione ou arraste um arquivo PDF
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-6 space-y-4">
                 <UploadDropzone
                   file={file}
                   onFileSelect={setFile}
                   onFileRemove={() => setFile(null)}
                   disabled={uploading}
                 />
-              </div>
 
-              <div className="mt-3 sm:mt-4">
-                <label className="text-sm font-medium text-foreground" htmlFor="observacao">
-                  Observação <span className="text-muted-foreground font-normal">(opcional)</span>
-                </label>
-                <Textarea
-                  id="observacao"
-                  value={observacao}
-                  onChange={(e) => setObservacao(e.target.value)}
-                  placeholder="Descreva o certificado, evento ou atividade..."
-                  className="mt-1.5 resize-none"
-                  rows={3}
-                  maxLength={500}
-                  disabled={uploading}
-                />
-                <p className="mt-1 text-xs text-muted-foreground text-right">
-                  {observacao.length}/500
-                </p>
-              </div>
-
-              {uploading && (
-                <div className="mt-3 sm:mt-4 animate-fade-in space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Enviando...</span>
-                    <span className="font-medium text-foreground">{progress}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
+                <div>
+                  <label
+                    className="text-sm font-medium text-foreground"
+                    htmlFor="observacao"
+                  >
+                    Observação{" "}
+                    <span className="text-muted-foreground font-normal">
+                      (opcional)
+                    </span>
+                  </label>
+                  <Textarea
+                    id="observacao"
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    placeholder="Descreva o certificado, evento ou atividade..."
+                    className="mt-1.5 resize-none"
+                    rows={3}
+                    maxLength={500}
+                    disabled={uploading}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground text-right">
+                    {observacao.length}/500
+                  </p>
                 </div>
-              )}
 
-              <div className="mt-4 sm:mt-6">
+                {uploading && (
+                  <div className="animate-fade-in space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Enviando...
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {progress}%
+                      </span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                )}
+
                 <Button
                   onClick={handleUpload}
                   disabled={!file || uploading}
@@ -240,39 +275,48 @@ const HorasComplementares: React.FC = () => {
                   )}
                 </Button>
               </div>
-            </div>
+            </section>
 
-            {/* Histórico */}
-            <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
-              <h2 className="text-base sm:text-lg font-bold text-foreground">Histórico de envios</h2>
-              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                Acompanhe o status dos seus certificados
-              </p>
-              <div className="mt-4 sm:mt-5">
-                <HistoricoCertificados certificados={certificados} loading={histLoading} />
+            {/* History section */}
+            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
+                  <History className="h-4 w-4 text-secondary" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-foreground">
+                    Histórico de envios
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Acompanhe o status dos seus certificados
+                  </p>
+                </div>
               </div>
-            </div>
+              <div className="p-4 sm:p-6">
+                <HistoricoCertificados
+                  certificados={certificados}
+                  loading={histLoading}
+                />
+              </div>
+            </section>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-5 sm:space-y-6">
-            <CardOrientacoes />
-
-            <div className="rounded-xl border bg-card p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-bold text-foreground">Seu perfil</h3>
-              <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 text-sm">
-                <div className="break-words">
-                  <span className="text-muted-foreground">Nome: </span>
-                  <span className="font-medium text-foreground">
-                    {user.displayName || userData?.nome || "—"}
-                  </span>
+          <div className="space-y-6">
+            {/* Orientações */}
+            <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <BookOpen className="h-4 w-4 text-primary" />
                 </div>
-                <div className="break-words">
-                  <span className="text-muted-foreground">E-mail: </span>
-                  <span className="font-medium text-foreground">{user.email || "—"}</span>
-                </div>
+                <h3 className="text-sm font-bold text-foreground">
+                  Orientações
+                </h3>
               </div>
-            </div>
+              <div className="p-4 sm:p-5">
+                <CardOrientacoes />
+              </div>
+            </section>
           </div>
         </div>
       </main>
