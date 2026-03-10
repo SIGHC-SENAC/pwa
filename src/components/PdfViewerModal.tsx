@@ -54,8 +54,8 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   React.useEffect(() => {
     if (cert) {
       setHoras(cert.horasAprovadas?.toString() || "");
-      setObsAdmin((cert as any).observacaoAdmin || "");
-      setMotivo((cert as any).motivoRejeicao || "");
+      setObsAdmin(cert.observacaoAdmin || "");
+      setMotivo(cert.motivoRejeicao || "");
       setPdfLoading(true);
     }
   }, [cert]);
