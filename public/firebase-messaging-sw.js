@@ -14,10 +14,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const { title, body, icon } = payload.notification || {};
-  self.registration.showNotification(title || "Nova notificação", {
-    body: body || "",
-    icon: icon || "/pwa-192x192.png",
+  // If the message already has a 'notification' payload, the browser
+  // displays it automatically — skip to avoid duplicates.
+  if (payload.notification) return;
+
+  // For data-only messages, show manually
+  const title = payload.data?.title || "Nova notificação";
+  const body = payload.data?.body || "";
+  self.registration.showNotification(title, {
+    body,
+    icon: payload.data?.icon || "/pwa-192x192.png",
     badge: "/pwa-192x192.png",
     data: payload.data,
   });
