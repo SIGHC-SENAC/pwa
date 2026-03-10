@@ -90,3 +90,43 @@
     to { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* Custom scrollbar — desktop only */
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(214 18% 78% / 0.5) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(214 18% 78% / 0.5);
+    border-radius: 9999px;
+    transition: background 0.2s;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(210 100% 29% / 0.5);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Even more subtle in modals/dialogs */
+  [role="dialog"] *::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  [role="dialog"] *::-webkit-scrollbar-thumb {
+    background: hsl(214 18% 78% / 0.35);
+  }
+}
