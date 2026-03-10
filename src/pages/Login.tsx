@@ -35,6 +35,11 @@ const Login: React.FC = () => {
           if (userDoc.exists()) role = userDoc.data().role || "";
         } catch {}
       }
+      // Request notification permission immediately after successful login
+      await requestAndSyncFcmToken(cred.user.uid).catch((e) =>
+        console.warn("[FCM] Erro ao solicitar permissão após login:", e)
+      );
+
       if (role === "admin") {
         navigate("/admin");
       } else {
