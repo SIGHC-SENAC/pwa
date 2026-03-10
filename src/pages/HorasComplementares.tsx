@@ -12,7 +12,7 @@ import {
 } from "@/services/certificadoService";
 import AlunoHeader from "@/components/AlunoHeader";
 import DashboardCards from "@/components/DashboardCards";
-import UploadDropzone from "@/components/UploadDropzone";
+import FloatingUploadButton from "@/components/FloatingUploadButton";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
 import ProgressoHoras from "@/components/ProgressoHoras";
