@@ -253,7 +253,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-        <DrawerContent className="max-h-[95vh] flex flex-col">
+        <DrawerContent className="max-h-[92vh] mx-2 flex flex-col rounded-t-2xl">
           <DrawerHeader className="px-4 pb-2 shrink-0">
             <DrawerTitle className="font-serif text-lg">Análise do Certificado</DrawerTitle>
           </DrawerHeader>
