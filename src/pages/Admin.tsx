@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -70,13 +69,13 @@ const Admin: React.FC = () => {
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isAdmin = userData?.role === "admin";
-  const isMobile = useIsMobile();
 
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState<CertificadoMeta | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [sortOrder, setSortOrder] = useState("recente");
@@ -116,6 +115,7 @@ const Admin: React.FC = () => {
     await loadData();
   };
 
+  // Summary stats
   const stats = useMemo(() => {
     const total = certificados.length;
     const pendentes = certificados.filter((c) => c.status === "pendente").length;
@@ -125,6 +125,7 @@ const Admin: React.FC = () => {
     return { total, pendentes, aprovados, rejeitados, horasTotal };
   }, [certificados]);
 
+  // Student grouping
   const alunosSummary = useMemo(() => {
     const map = new Map<string, { nome: string; email: string; total: number; aprovados: number; rejeitados: number; pendentes: number; horas: number }>();
     certificados.forEach((c) => {
@@ -138,10 +139,13 @@ const Admin: React.FC = () => {
     return map;
   }, [certificados]);
 
+  // Filtered & sorted
   const filtered = useMemo(() => {
     let result = [...certificados];
+
     if (alunoView) result = result.filter((c) => c.uid === alunoView);
     if (statusFilter !== "todos") result = result.filter((c) => c.status === statusFilter);
+
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter(
@@ -151,9 +155,11 @@ const Admin: React.FC = () => {
           c.nomeArquivo.toLowerCase().includes(q)
       );
     }
+
     if (sortOrder === "recente") result.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
     else if (sortOrder === "antigo") result.sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
     else if (sortOrder === "az") result.sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
+
     return result;
   }, [certificados, statusFilter, searchTerm, sortOrder, alunoView]);
 
@@ -178,7 +184,7 @@ const Admin: React.FC = () => {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <ShieldAlert className="h-8 w-8 text-destructive" />
         </div>
-        <h1 className="font-serif text-xl sm:text-2xl font-semibold text-foreground">Acesso restrito</h1>
+        <h1 className="font-serif text-2xl font-semibold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
           Esta página é exclusiva para administradores.
         </p>
@@ -192,28 +198,28 @@ const Admin: React.FC = () => {
     { label: "Pendentes", value: stats.pendentes, icon: Clock, color: "text-warning" },
     { label: "Aprovados", value: stats.aprovados, icon: CheckCircle2, color: "text-success" },
     { label: "Rejeitados", value: stats.rejeitados, icon: XCircle, color: "text-destructive" },
-    { label: "Horas", value: stats.horasTotal, icon: Award, color: "text-primary" },
+    { label: "Horas aprovadas", value: stats.horasTotal, icon: Award, color: "text-primary" },
   ];
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <Shield className="h-5 w-5 text-primary" />
             </div>
-            <div className="min-w-0">
-              <h1 className="font-serif text-lg sm:text-2xl font-bold text-foreground truncate">Análise de Horas</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Gerencie os certificados enviados pelos alunos</p>
+            <div>
+              <h1 className="font-serif text-2xl font-bold text-foreground">Análise de Horas Complementares</h1>
+              <p className="text-sm text-muted-foreground">Gerencie os certificados enviados pelos alunos</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={async () => { await signOut(auth); navigate("/login"); }}
-            className="gap-2 text-muted-foreground hover:text-destructive shrink-0"
+            className="gap-2 text-muted-foreground hover:text-destructive"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Sair</span>
@@ -221,18 +227,18 @@ const Admin: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 lg:grid-cols-5 sm:gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {summaryCards.map((s) => (
             <Card key={s.label} className="shadow-sm">
-              <CardContent className="p-2.5 sm:p-4 flex items-center gap-2 sm:gap-3">
-                <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-muted ${s.color}`}>
-                  <s.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted ${s.color}`}>
+                  <s.icon className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-lg sm:text-2xl font-bold text-foreground">{s.value}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{s.label}</p>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -243,24 +249,24 @@ const Admin: React.FC = () => {
         {alunoView && (() => {
           const al = alunosSummary.get(alunoView);
           return al ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border bg-card p-3 sm:p-4">
-              <div className="text-sm min-w-0">
-                <span className="text-muted-foreground">Filtrando: </span>
+            <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+              <div className="text-sm">
+                <span className="text-muted-foreground">Filtrando por aluno: </span>
                 <span className="font-semibold text-foreground">{al.nome}</span>
-                <span className="text-muted-foreground"> — {al.total} envios, {al.horas}h</span>
+                <span className="text-muted-foreground"> — {al.total} envios, {al.horas}h aprovadas</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setAlunoView(null)} className="self-end sm:self-auto">Limpar</Button>
+              <Button variant="ghost" size="sm" onClick={() => setAlunoView(null)}>Limpar filtro</Button>
             </div>
           ) : null;
         })()}
 
         {/* Filters */}
-        <div className="rounded-xl border bg-card p-3 sm:p-4 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar aluno, e-mail ou arquivo..."
+                placeholder="Buscar por aluno, e-mail ou arquivo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -281,154 +287,96 @@ const Admin: React.FC = () => {
 
         {/* Tabs */}
         <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-          <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex">
-            <TabsTrigger value="todos" className="text-xs sm:text-sm">
-              Todos {!isMobile && `(${stats.total})`}
-            </TabsTrigger>
-            <TabsTrigger value="pendente" className="text-xs sm:text-sm">
-              Pend. {!isMobile && `(${stats.pendentes})`}
-            </TabsTrigger>
-            <TabsTrigger value="aprovado" className="text-xs sm:text-sm">
-              Aprov. {!isMobile && `(${stats.aprovados})`}
-            </TabsTrigger>
-            <TabsTrigger value="rejeitado" className="text-xs sm:text-sm">
-              Rej. {!isMobile && `(${stats.rejeitados})`}
-            </TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="todos">Todos ({stats.total})</TabsTrigger>
+            <TabsTrigger value="pendente">Pendentes ({stats.pendentes})</TabsTrigger>
+            <TabsTrigger value="aprovado">Aprovados ({stats.aprovados})</TabsTrigger>
+            <TabsTrigger value="rejeitado">Rejeitados ({stats.rejeitados})</TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {/* Content: Table on desktop, Cards on mobile */}
+        {/* Table */}
         <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center px-4">
-              <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/40" />
-              <p className="mt-4 font-serif text-base sm:text-lg font-medium text-foreground">Nenhum certificado encontrado</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <FileText className="h-12 w-12 text-muted-foreground/40" />
+              <p className="mt-4 font-serif text-lg font-medium text-foreground">Nenhum certificado encontrado</p>
               <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos envios</p>
             </div>
           ) : (
             <>
-              {/* Mobile Cards */}
-              {isMobile ? (
-                <div className="divide-y">
-                  {paginated.map((cert) => {
-                    const st = statusConfig[cert.status] || statusConfig.pendente;
-                    return (
-                      <div key={cert.id} className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <button
-                            onClick={() => setAlunoView(cert.uid)}
-                            className="text-left min-w-0"
-                          >
-                            <p className="font-medium text-foreground text-sm truncate">{cert.nomeAluno}</p>
-                            <p className="text-xs text-muted-foreground truncate">{cert.emailAluno}</p>
-                          </button>
-                          <Badge variant="outline" className={`shrink-0 ${st.className}`}>{st.label}</Badge>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <FileText className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{cert.nomeArquivo}</span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          <span>{formatDate(cert.createdAt)}</span>
-                          <span>{formatFileSize(cert.tamanhoBytes)}</span>
-                          {cert.horasAprovadas ? (
-                            <span className="font-medium text-foreground">{cert.horasAprovadas}h aprovadas</span>
-                          ) : null}
-                        </div>
-
-                        {cert.nomeAdmin && (
-                          <p className="text-xs text-muted-foreground">
-                            Analisado por: {cert.nomeAdmin}
-                          </p>
-                        )}
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => { setSelectedCert(cert); setModalOpen(true); }}
-                          className="w-full gap-1.5"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Ver detalhes
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                /* Desktop Table */
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead>Aluno</TableHead>
-                        <TableHead className="hidden md:table-cell">Arquivo</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden lg:table-cell">Horas</TableHead>
-                        <TableHead className="hidden xl:table-cell">Analisado por</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginated.map((cert) => {
-                        const st = statusConfig[cert.status] || statusConfig.pendente;
-                        return (
-                          <TableRow key={cert.id} className="group">
-                            <TableCell>
-                              <button onClick={() => setAlunoView(cert.uid)} className="text-left hover:underline">
-                                <p className="font-medium text-foreground text-sm">{cert.nomeAluno}</p>
-                                <p className="text-xs text-muted-foreground">{cert.emailAluno}</p>
-                              </button>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <p className="text-sm text-foreground truncate max-w-[200px]">{cert.nomeArquivo}</p>
-                              <p className="text-xs text-muted-foreground">{formatFileSize(cert.tamanhoBytes)}</p>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDate(cert.createdAt)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={st.className}>{st.label}</Badge>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm font-medium text-foreground">
-                              {cert.horasAprovadas || "—"}
-                            </TableCell>
-                            <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
-                              {cert.nomeAdmin || "—"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => { setSelectedCert(cert); setModalOpen(true); }}
-                                className="gap-1.5"
-                              >
-                                <Eye className="h-4 w-4" />
-                                Detalhes
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead>Aluno</TableHead>
+                      <TableHead className="hidden md:table-cell">Arquivo</TableHead>
+                      <TableHead className="hidden sm:table-cell">Data</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden lg:table-cell">Horas</TableHead>
+                      <TableHead className="hidden xl:table-cell">Analisado por</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginated.map((cert) => {
+                      const st = statusConfig[cert.status] || statusConfig.pendente;
+                      return (
+                        <TableRow key={cert.id} className="group">
+                          <TableCell>
+                            <button
+                              onClick={() => setAlunoView(cert.uid)}
+                              className="text-left hover:underline"
+                            >
+                              <p className="font-medium text-foreground text-sm">{cert.nomeAluno}</p>
+                              <p className="text-xs text-muted-foreground">{cert.emailAluno}</p>
+                            </button>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <p className="text-sm text-foreground truncate max-w-[200px]">{cert.nomeArquivo}</p>
+                            <p className="text-xs text-muted-foreground">{formatFileSize(cert.tamanhoBytes)}</p>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                            {formatDate(cert.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={st.className}>{st.label}</Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-sm font-medium text-foreground">
+                            {cert.horasAprovadas || "—"}
+                          </TableCell>
+                          <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
+                            {cert.nomeAdmin || "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setSelectedCert(cert); setModalOpen(true); }}
+                              className="gap-1.5"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="hidden sm:inline">Detalhes</span>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-3 py-3 sm:px-4">
-                  <p className="text-xs sm:text-sm text-muted-foreground">
+                <div className="flex items-center justify-between border-t px-4 py-3">
+                  <p className="text-sm text-muted-foreground">
                     {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                   </p>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="icon"
@@ -438,7 +386,7 @@ const Admin: React.FC = () => {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-xs sm:text-sm text-foreground min-w-[3rem] text-center">
+                    <span className="text-sm text-foreground">
                       {currentPage} / {totalPages}
                     </span>
                     <Button
@@ -459,21 +407,21 @@ const Admin: React.FC = () => {
 
         {/* Students Summary */}
         {!alunoView && alunosSummary.size > 0 && (
-          <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <div className="rounded-xl border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
               <Users className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Resumo por aluno</h2>
+              <h2 className="font-serif text-lg font-semibold text-foreground">Resumo por aluno</h2>
             </div>
-            <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from(alunosSummary.entries()).map(([uid, al]) => (
                 <button
                   key={uid}
                   onClick={() => setAlunoView(uid)}
-                  className="text-left rounded-lg border p-3 sm:p-4 transition-shadow hover:shadow-md bg-background"
+                  className="text-left rounded-lg border p-4 transition-shadow hover:shadow-md bg-background"
                 >
-                  <p className="font-medium text-foreground text-sm truncate">{al.nome}</p>
-                  <p className="text-xs text-muted-foreground truncate mb-2">{al.email}</p>
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2 text-xs">
+                  <p className="font-medium text-foreground text-sm">{al.nome}</p>
+                  <p className="text-xs text-muted-foreground mb-2">{al.email}</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
                     <span className="rounded-full bg-muted px-2 py-0.5">{al.total} envios</span>
                     <span className="rounded-full bg-success/15 text-success px-2 py-0.5">{al.aprovados} aprov.</span>
                     <span className="rounded-full bg-destructive/15 text-destructive px-2 py-0.5">{al.rejeitados} rej.</span>
