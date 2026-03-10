@@ -131,7 +131,7 @@ const Admin: React.FC = () => {
     certificados.forEach((c) => {
       const existing = map.get(c.uid) || { nome: c.nomeAluno, email: c.emailAluno, total: 0, aprovados: 0, rejeitados: 0, pendentes: 0, horas: 0 };
       existing.total++;
-      if (c.status === "aprovado") { existing.aprovados++; existing.horas += (c as any).horasAprovadas || 0; }
+      if (c.status === "aprovado") { existing.aprovados++; existing.horas += c.horasAprovadas || 0; }
       else if (c.status === "rejeitado") existing.rejeitados++;
       else existing.pendentes++;
       map.set(c.uid, existing);
