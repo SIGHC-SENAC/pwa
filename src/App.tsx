@@ -23,6 +23,7 @@ const App = () => (
             <Route path="/" element={<HorasComplementares />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
