@@ -158,7 +158,7 @@ const Login: React.FC = () => {
             </form>
 
             <div className="text-center">
-              <button type="button" className="text-sm text-primary hover:underline font-medium">
+              <button type="button" onClick={() => navigate("/forgot-password")} className="text-sm text-primary hover:underline font-medium">
                 Esqueceu sua senha?
               </button>
             </div>
