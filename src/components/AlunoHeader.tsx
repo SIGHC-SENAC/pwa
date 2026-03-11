@@ -13,7 +13,7 @@ import {
 import { LogOut, User, ChevronDown } from "lucide-react";
 import senacLogo from "@/assets/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
-import { useAuth } from "@/contexts/AuthContext";
+
 
 interface AlunoHeaderProps {
   userName: string;
@@ -60,7 +60,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
 
         {/* Right: Notification + User menu */}
         <div className="flex items-center gap-1">
-          <NotificationBell userId={useAuth().user?.uid} />
+          <NotificationBell userId={auth.currentUser?.uid} />
           <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
