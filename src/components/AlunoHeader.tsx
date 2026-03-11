@@ -60,7 +60,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
 
         {/* Right: Notification + User menu */}
         <div className="flex items-center gap-1">
-          <NotificationBell userId={useAuth().user?.uid} />
+          <NotificationBell userId={auth.currentUser?.uid} />
           <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
