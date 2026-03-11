@@ -103,6 +103,20 @@ const HorasComplementares: React.FC = () => {
             setObservacao("");
             setProgress(0);
             loadCertificados();
+
+            // Notifica admins em background (não bloqueia UX)
+            try {
+              await fetch("https://us-central1-pi-3p-tads049.cloudfunctions.net/app/notificacoes/upload-certificado", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  nomeAluno: user.displayName || userData.nome || "Aluno",
+                  nomeArquivo: file.name,
+                }),
+              });
+            } catch (notifErr) {
+              console.warn("Falha ao notificar admins:", notifErr);
+            }
           } catch (err) {
             console.error("Erro ao salvar metadados:", err);
             toast.error(
