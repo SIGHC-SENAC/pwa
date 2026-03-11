@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2, Mail, Lock } from "lucide-react";
-import senacLogo from "@/assets/senac-logo.png";
+const senacLogo = "/senac-logo.png";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
