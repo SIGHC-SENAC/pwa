@@ -7,6 +7,7 @@ interface UserData {
   nome: string;
   email: string;
   role: string;
+  cursoId?: string;
   createdAt: number;
   createdBy: string;
 }
