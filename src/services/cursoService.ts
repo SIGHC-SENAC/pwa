@@ -1,4 +1,5 @@
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 const API_BASE = "https://us-central1-pi-3p-tads049.cloudfunctions.net/app";
 
