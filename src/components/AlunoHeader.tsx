@@ -10,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, User, ChevronDown, Settings } from "lucide-react";
 const senacLogo = "/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
+import SettingsDialog from "@/components/SettingsDialog";
 
 
 interface AlunoHeaderProps {
