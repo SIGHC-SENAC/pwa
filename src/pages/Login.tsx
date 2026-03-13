@@ -157,9 +157,12 @@ const Login: React.FC = () => {
               </Button>
             </form>
 
-            <div className="text-center">
+            <div className="flex flex-col items-center gap-2">
               <button type="button" onClick={() => navigate("/forgot-password")} className="text-sm text-primary hover:underline font-medium">
                 Esqueceu sua senha?
+              </button>
+              <button type="button" onClick={() => navigate("/first-access")} className="text-sm text-muted-foreground hover:text-primary hover:underline font-medium transition-colors">
+                Primeiro acesso? Defina sua senha
               </button>
             </div>
           </div>
