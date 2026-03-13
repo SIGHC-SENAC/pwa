@@ -53,7 +53,7 @@ const AdminAddAluno: React.FC = () => {
     setSaving(true);
     try {
       await createAluno({ nome: nome.trim(), email: email.trim(), cursoId });
-      toast.success("Aluno cadastrado com sucesso!");
+      toast.success("Aluno cadastrado com sucesso! Um e-mail de boas-vindas foi enviado.");
       setNome("");
       setEmail("");
       setCursoId("");
