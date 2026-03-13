@@ -99,6 +99,7 @@ const Admin: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [alunoView, setAlunoView] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [adminTab, setAdminTab] = useState<"certificados" | "cursos" | "alunos">("certificados");
 
   const loadData = useCallback(async () => {
     setLoading(true);
