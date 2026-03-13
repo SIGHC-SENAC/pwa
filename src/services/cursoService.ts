@@ -1,4 +1,16 @@
+import { auth } from "@/lib/firebase";
+
 const API_BASE = "https://us-central1-pi-3p-tads049.cloudfunctions.net/app";
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Usuário não autenticado");
+  const token = await user.getIdToken();
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+}
 
 export interface Curso {
   id?: string;
@@ -52,9 +64,10 @@ export async function deleteCurso(id: string): Promise<void> {
 // ── Alunos ──
 
 export async function createAluno(payload: AlunoPayload): Promise<any> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/alunos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
