@@ -22,7 +22,8 @@ export interface Curso {
 }
 
 export async function fetchCursoById(id: string): Promise<Curso> {
-  const res = await fetch(`${API_BASE}/cursos/${id}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/cursos/${id}`, { headers });
   if (!res.ok) throw new Error("Erro ao buscar curso");
   return res.json();
 }
