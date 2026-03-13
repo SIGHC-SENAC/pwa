@@ -1,12 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDownloadURL } from "firebase/storage";
-import { ref } from "firebase/storage";
 import { useAuth } from "@/contexts/AuthContext";
-import { storage } from "@/lib/firebase";
 import {
   uploadCertificado,
-  saveCertificadoMeta,
+  processarCertificado,
   fetchCertificados,
   CertificadoMeta,
 } from "@/services/certificadoService";
@@ -94,31 +91,26 @@ const HorasComplementares: React.FC = () => {
         },
         async () => {
           try {
-            const storageRef = ref(storage, storagePath);
-            const downloadURL = await getDownloadURL(storageRef);
+            const token = await user.getIdToken();
 
-            await saveCertificadoMeta({
-              uid: user.uid,
-              nomeAluno: user.displayName || userData.nome || "Aluno",
-              emailAluno: user.email || userData.email,
-              nomeArquivo: file.name,
+            const result = await processarCertificado(
+              user.uid,
               storagePath,
-              downloadURL,
-              tamanhoBytes: file.size,
-              observacaoAluno: observacao.trim(),
-            });
+              file.name,
+              token
+            );
 
-            toast.success("Certificado enviado com sucesso!");
+            toast.success("Certificado enviado e validado com sucesso!");
             setFile(null);
             setObservacao("");
             setProgress(0);
             loadCertificados();
 
-            // Notifica admins em background (não bloqueia UX)
+            // Notifica admins em background
             try {
               await fetch("https://us-central1-pi-3p-tads049.cloudfunctions.net/app/notificacoes/upload-certificado", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                   nomeAluno: user.displayName || userData.nome || "Aluno",
                   nomeArquivo: file.name,
@@ -127,11 +119,9 @@ const HorasComplementares: React.FC = () => {
             } catch (notifErr) {
               console.warn("Falha ao notificar admins:", notifErr);
             }
-          } catch (err) {
-            console.error("Erro ao salvar metadados:", err);
-            toast.error(
-              "O arquivo foi enviado, mas houve um erro ao salvar os dados."
-            );
+          } catch (err: any) {
+            console.error("Erro na validação do certificado:", err);
+            toast.error(err.message || "Erro ao validar o certificado. Tente novamente.");
           } finally {
             setUploading(false);
           }
