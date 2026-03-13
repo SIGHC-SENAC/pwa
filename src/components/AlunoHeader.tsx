@@ -10,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, User, ChevronDown, Settings } from "lucide-react";
 const senacLogo = "/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
+import SettingsDialog from "@/components/SettingsDialog";
 
 
 interface AlunoHeaderProps {
@@ -23,6 +24,7 @@ interface AlunoHeaderProps {
 const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const initials = userName
     .split(" ")
@@ -87,9 +89,9 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
               <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
             <DropdownMenuSeparator className="md:hidden" />
-            <DropdownMenuItem disabled>
-              <User className="h-4 w-4 mr-2" />
-              Meu perfil
+            <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Configurações
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -106,6 +108,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
       </div>
       {/* Accent bar */}
       <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
   );
 };

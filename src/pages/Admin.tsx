@@ -55,10 +55,12 @@ import {
   Users,
   User,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 const senacLogo = "/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
+import SettingsDialog from "@/components/SettingsDialog";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
@@ -94,6 +96,7 @@ const Admin: React.FC = () => {
   const [sortOrder, setSortOrder] = useState("recente");
   const [currentPage, setCurrentPage] = useState(1);
   const [alunoView, setAlunoView] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -259,9 +262,9 @@ const Admin: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
               <DropdownMenuSeparator className="md:hidden" />
-              <DropdownMenuItem disabled>
-                <User className="h-4 w-4 mr-2" />
-                Meu perfil
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -540,6 +543,7 @@ const Admin: React.FC = () => {
         onAprovar={handleAprovar}
         onRejeitar={handleRejeitar}
       />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };
