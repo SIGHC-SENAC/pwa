@@ -36,6 +36,7 @@ const HorasComplementares: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [histLoading, setHistLoading] = useState(true);
+  const [curso, setCurso] = useState<Curso | null>(null);
 
   const loadCertificados = useCallback(async () => {
     if (!user) return;
