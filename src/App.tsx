@@ -8,6 +8,7 @@ import HorasComplementares from "./pages/HorasComplementares";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import FirstAccess from "./pages/FirstAccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
