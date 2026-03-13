@@ -261,9 +261,9 @@ const Admin: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
               <DropdownMenuSeparator className="md:hidden" />
-              <DropdownMenuItem disabled>
-                <User className="h-4 w-4 mr-2" />
-                Meu perfil
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
