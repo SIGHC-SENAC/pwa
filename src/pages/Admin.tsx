@@ -57,6 +57,7 @@ import {
   ChevronDown,
   Settings,
   BookOpen,
+  GraduationCap,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 const senacLogo = "/senac-logo.png";
