@@ -84,7 +84,9 @@ export async function processarCertificado(
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error || "Erro ao processar certificado");
+    const error: any = new Error(data.error || "Erro ao processar certificado");
+    error.encontrados = data.encontrados;
+    throw error;
   }
   return data;
 }
