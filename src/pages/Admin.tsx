@@ -96,6 +96,7 @@ const Admin: React.FC = () => {
   const [sortOrder, setSortOrder] = useState("recente");
   const [currentPage, setCurrentPage] = useState(1);
   const [alunoView, setAlunoView] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
