@@ -78,6 +78,7 @@ const AdminCursos: React.FC = () => {
   const [nome, setNome] = useState("");
   const [codigo, setCodigo] = useState("");
   const [turno, setTurno] = useState<string>("manhã");
+  const [cargaHoraria, setCargaHoraria] = useState<string>("");
 
   const loadCursos = useCallback(async () => {
     setLoading(true);
@@ -101,6 +102,7 @@ const AdminCursos: React.FC = () => {
     setNome("");
     setCodigo("");
     setTurno("manhã");
+    setCargaHoraria("");
     setDialogOpen(true);
   };
 
@@ -109,21 +111,28 @@ const AdminCursos: React.FC = () => {
     setNome(curso.nome);
     setCodigo(curso.codigo);
     setTurno(curso.turno);
+    setCargaHoraria(String(curso.cargaHorariaComplementar || ""));
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !codigo.trim()) {
+    if (!nome.trim() || !codigo.trim() || !cargaHoraria) {
       toast.error("Preencha todos os campos.");
+      return;
+    }
+    const cargaNum = Number(cargaHoraria);
+    if (isNaN(cargaNum) || cargaNum <= 0) {
+      toast.error("Informe uma carga horária válida.");
       return;
     }
     setSaving(true);
     try {
+      const payload = { nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"], cargaHorariaComplementar: cargaNum };
       if (editing?.id) {
-        await updateCurso(editing.id, { nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"] });
+        await updateCurso(editing.id, payload);
         toast.success("Curso atualizado.");
       } else {
-        await createCurso({ nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"] });
+        await createCurso(payload);
         toast.success("Curso cadastrado.");
       }
       setDialogOpen(false);
@@ -275,6 +284,16 @@ const AdminCursos: React.FC = () => {
                   <SelectItem value="noite">Noite</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Horas complementares exigidas</label>
+              <Input
+                type="number"
+                min={1}
+                value={cargaHoraria}
+                onChange={(e) => setCargaHoraria(e.target.value)}
+                placeholder="Ex: 200"
+              />
             </div>
           </div>
           <DialogFooter>

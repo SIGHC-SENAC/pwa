@@ -10,6 +10,7 @@ import {
   fetchCertificados,
   CertificadoMeta,
 } from "@/services/certificadoService";
+import { fetchCursoById, Curso } from "@/services/cursoService";
 import AlunoHeader from "@/components/AlunoHeader";
 import DashboardCards from "@/components/DashboardCards";
 import FloatingUploadButton from "@/components/FloatingUploadButton";
@@ -35,6 +36,7 @@ const HorasComplementares: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [histLoading, setHistLoading] = useState(true);
+  const [curso, setCurso] = useState<Curso | null>(null);
 
   const loadCertificados = useCallback(async () => {
     if (!user) return;
@@ -61,6 +63,14 @@ const HorasComplementares: React.FC = () => {
       loadCertificados();
     }
   }, [user, isAluno, loadCertificados]);
+
+  useEffect(() => {
+    if (userData?.cursoId) {
+      fetchCursoById(userData.cursoId)
+        .then(setCurso)
+        .catch((err) => console.error("Erro ao buscar curso:", err));
+    }
+  }, [userData?.cursoId]);
 
   const handleUpload = async () => {
     if (!file || !user || !userData) return;
@@ -206,6 +216,8 @@ const HorasComplementares: React.FC = () => {
             (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
             0
           )}
+          nomeCurso={curso?.nome}
+          cargaHorariaTotal={curso?.cargaHorariaComplementar}
           loading={histLoading}
         />
 

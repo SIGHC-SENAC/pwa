@@ -2,24 +2,26 @@ import React, { useEffect, useState } from "react";
 import { GraduationCap, Target, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-// TODO: Substituir por dados reais do Firestore
-const MOCK_CURSO = {
-  nomeCurso: "Análise e Desenvolvimento de Sistemas",
-  cargaHorariaTotalCurso: 200,
-};
-
 interface ProgressoHorasProps {
   horasAprovadas: number;
+  nomeCurso?: string;
+  cargaHorariaTotal?: number;
   loading?: boolean;
 }
 
-const ProgressoHoras: React.FC<ProgressoHorasProps> = ({ horasAprovadas, loading }) => {
+const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
+  horasAprovadas,
+  nomeCurso = "Carregando curso...",
+  cargaHorariaTotal = 0,
+  loading,
+}) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
 
-  const { nomeCurso, cargaHorariaTotalCurso } = MOCK_CURSO;
-  const horasRestantes = Math.max(0, cargaHorariaTotalCurso - horasAprovadas);
-  const percentual = Math.min(100, Math.round((horasAprovadas / cargaHorariaTotalCurso) * 100));
-  const concluido = horasAprovadas >= cargaHorariaTotalCurso;
+  const horasRestantes = Math.max(0, cargaHorariaTotal - horasAprovadas);
+  const percentual = cargaHorariaTotal > 0
+    ? Math.min(100, Math.round((horasAprovadas / cargaHorariaTotal) * 100))
+    : 0;
+  const concluido = cargaHorariaTotal > 0 && horasAprovadas >= cargaHorariaTotal;
 
   useEffect(() => {
     if (loading) return;
@@ -57,7 +59,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({ horasAprovadas, loading
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <span className="text-muted-foreground">
             <span className="font-bold text-foreground">{horasAprovadas}h</span> de{" "}
-            <span className="font-bold text-foreground">{cargaHorariaTotalCurso}h</span> concluídas
+            <span className="font-bold text-foreground">{cargaHorariaTotal}h</span> concluídas
           </span>
           {!concluido && horasAprovadas > 0 && (
             <span className="text-muted-foreground">
@@ -83,7 +85,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({ horasAprovadas, loading
             </span>
             <span className="flex items-center gap-1">
               <Target className="h-3 w-3" />
-              Meta do curso: {cargaHorariaTotalCurso}h
+              Meta do curso: {cargaHorariaTotal}h
             </span>
           </div>
         </div>

@@ -17,7 +17,14 @@ export interface Curso {
   nome: string;
   codigo: string;
   turno: "manhã" | "tarde" | "noite";
+  cargaHorariaComplementar: number;
   criadoEm?: string;
+}
+
+export async function fetchCursoById(id: string): Promise<Curso> {
+  const res = await fetch(`${API_BASE}/cursos/${id}`);
+  if (!res.ok) throw new Error("Erro ao buscar curso");
+  return res.json();
 }
 
 export interface AlunoPayload {
