@@ -64,9 +64,10 @@ export async function deleteCurso(id: string): Promise<void> {
 // ── Alunos ──
 
 export async function createAluno(payload: AlunoPayload): Promise<any> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/alunos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
