@@ -45,21 +45,6 @@ src/
 └── services/         # Serviços de API (cursos, certificados, admin, FCM)
 ```
 
-## API REST
-
-Base URL: `https://us-central1-pi-3p-tads049.cloudfunctions.net/app`
-
-Todas as rotas exigem header `Authorization: Bearer <ID_TOKEN_FIREBASE>`.
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/cursos` | Listar cursos |
-| GET | `/cursos/:id` | Buscar curso por ID |
-| POST | `/cursos` | Criar curso |
-| PUT | `/cursos/:id` | Atualizar curso |
-| DELETE | `/cursos/:id` | Deletar curso |
-| POST | `/alunos` | Cadastrar aluno |
-| POST | `/notificacoes/upload-certificado` | Notificar admins sobre upload |
 
 ## Como Executar
 
@@ -70,8 +55,8 @@ npm install
 # Rodar em desenvolvimento
 npm run dev
 
-# Build de produção
-npm run build
+# Build e deply de produção
+npm run deploy
 ```
 
 ## Deploy
