@@ -151,7 +151,42 @@ export async function fetchCertificados(uid: string): Promise<CertificadoMeta[]>
   }
 }
 
+export async function saveRejectedCertificado(data: {
+  uid: string;
+  nomeArquivo: string;
+  motivoRejeicao: string;
+  encontrados?: string[];
+}): Promise<string> {
+  const docRef = await addDoc(collection(db, COLLECTION), {
+    uid: data.uid,
+    nomeArquivo: data.nomeArquivo,
+    storagePath: "",
+    downloadURL: "",
+    contentType: "application/pdf",
+    tamanhoBytes: 0,
+    status: "rejeitado",
+    role: "aluno",
+    observacaoAluno: "",
+    horasInformadas: null,
+    horasAprovadas: null,
+    observacaoAdmin: null,
+    motivoRejeicao: data.motivoRejeicao,
+    nomeAdmin: "Sistema",
+    analisadoPor: "sistema",
+    dataAnalise: serverTimestamp(),
+    analiseSeguranca: "rejeitado",
+    encontradosSuspeitos: data.encontrados || [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
 export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
