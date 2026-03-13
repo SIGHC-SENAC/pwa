@@ -60,6 +60,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 const senacLogo = "/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
+import AdminCursos from "@/components/AdminCursos";
+import AdminAddAluno from "@/components/AdminAddAluno";
 import SettingsDialog from "@/components/SettingsDialog";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
