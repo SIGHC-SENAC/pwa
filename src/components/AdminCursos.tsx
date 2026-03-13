@@ -78,6 +78,7 @@ const AdminCursos: React.FC = () => {
   const [nome, setNome] = useState("");
   const [codigo, setCodigo] = useState("");
   const [turno, setTurno] = useState<string>("manhã");
+  const [cargaHoraria, setCargaHoraria] = useState<string>("");
 
   const loadCursos = useCallback(async () => {
     setLoading(true);
