@@ -116,17 +116,23 @@ const AdminCursos: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !codigo.trim()) {
+    if (!nome.trim() || !codigo.trim() || !cargaHoraria) {
       toast.error("Preencha todos os campos.");
+      return;
+    }
+    const cargaNum = Number(cargaHoraria);
+    if (isNaN(cargaNum) || cargaNum <= 0) {
+      toast.error("Informe uma carga horária válida.");
       return;
     }
     setSaving(true);
     try {
+      const payload = { nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"], cargaHorariaComplementar: cargaNum };
       if (editing?.id) {
-        await updateCurso(editing.id, { nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"] });
+        await updateCurso(editing.id, payload);
         toast.success("Curso atualizado.");
       } else {
-        await createCurso({ nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"] });
+        await createCurso(payload);
         toast.success("Curso cadastrado.");
       }
       setDialogOpen(false);
