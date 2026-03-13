@@ -1,12 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDownloadURL } from "firebase/storage";
-import { ref } from "firebase/storage";
 import { useAuth } from "@/contexts/AuthContext";
-import { storage } from "@/lib/firebase";
 import {
   uploadCertificado,
-  saveCertificadoMeta,
+  processarCertificado,
   fetchCertificados,
   CertificadoMeta,
 } from "@/services/certificadoService";
