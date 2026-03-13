@@ -108,6 +108,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
       </div>
       {/* Accent bar */}
       <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
   );
 };
