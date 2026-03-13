@@ -64,6 +64,14 @@ const HorasComplementares: React.FC = () => {
     }
   }, [user, isAluno, loadCertificados]);
 
+  useEffect(() => {
+    if (userData?.cursoId) {
+      fetchCursoById(userData.cursoId)
+        .then(setCurso)
+        .catch((err) => console.error("Erro ao buscar curso:", err));
+    }
+  }, [userData?.cursoId]);
+
   const handleUpload = async () => {
     if (!file || !user || !userData) return;
     setUploading(true);
