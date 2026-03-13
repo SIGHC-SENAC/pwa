@@ -56,6 +56,7 @@ import {
   User,
   ChevronDown,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 const senacLogo = "/senac-logo.png";
