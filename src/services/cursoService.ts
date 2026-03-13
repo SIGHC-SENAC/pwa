@@ -22,7 +22,8 @@ export interface Curso {
 }
 
 export async function fetchCursoById(id: string): Promise<Curso> {
-  const res = await fetch(`${API_BASE}/cursos/${id}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/cursos/${id}`, { headers });
   if (!res.ok) throw new Error("Erro ao buscar curso");
   return res.json();
 }
@@ -36,15 +37,17 @@ export interface AlunoPayload {
 // ── Cursos CRUD ──
 
 export async function fetchCursos(): Promise<Curso[]> {
-  const res = await fetch(`${API_BASE}/cursos`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/cursos`, { headers });
   if (!res.ok) throw new Error("Erro ao buscar cursos");
   return res.json();
 }
 
 export async function createCurso(curso: Omit<Curso, "id" | "criadoEm">): Promise<Curso> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/cursos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(curso),
   });
   if (!res.ok) throw new Error("Erro ao criar curso");
@@ -52,9 +55,10 @@ export async function createCurso(curso: Omit<Curso, "id" | "criadoEm">): Promis
 }
 
 export async function updateCurso(id: string, curso: Partial<Omit<Curso, "id">>): Promise<Curso> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/cursos/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(curso),
   });
   if (!res.ok) throw new Error("Erro ao atualizar curso");
@@ -62,8 +66,10 @@ export async function updateCurso(id: string, curso: Partial<Omit<Curso, "id">>)
 }
 
 export async function deleteCurso(id: string): Promise<void> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/cursos/${id}`, {
     method: "DELETE",
+    headers,
   });
   if (!res.ok) throw new Error("Erro ao excluir curso");
 }
