@@ -5,6 +5,7 @@ import {
   uploadCertificado,
   processarCertificado,
   fetchCertificados,
+  saveRejectedCertificado,
   CertificadoMeta,
 } from "@/services/certificadoService";
 import { fetchCursoById, Curso } from "@/services/cursoService";
