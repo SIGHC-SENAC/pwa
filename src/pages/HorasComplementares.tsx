@@ -216,6 +216,8 @@ const HorasComplementares: React.FC = () => {
             (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
             0
           )}
+          nomeCurso={curso?.nome}
+          cargaHorariaTotal={curso?.cargaHorariaComplementar}
           loading={histLoading}
         />
 
