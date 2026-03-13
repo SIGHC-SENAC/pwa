@@ -76,4 +76,4 @@ npm run build
 
 ## Deploy
 
-O projeto está configurado para deploy via **Firebase Hosting**. Também pode ser publicado pelo Lovable (Share → Publish).
+O projeto está configurado para deploy via **Firebase Hosting**. 
