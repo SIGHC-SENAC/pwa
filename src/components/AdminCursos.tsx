@@ -102,6 +102,7 @@ const AdminCursos: React.FC = () => {
     setNome("");
     setCodigo("");
     setTurno("manhã");
+    setCargaHoraria("");
     setDialogOpen(true);
   };
 
@@ -110,6 +111,7 @@ const AdminCursos: React.FC = () => {
     setNome(curso.nome);
     setCodigo(curso.codigo);
     setTurno(curso.turno);
+    setCargaHoraria(String(curso.cargaHorariaComplementar || ""));
     setDialogOpen(true);
   };
 
