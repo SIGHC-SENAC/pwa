@@ -5,6 +5,7 @@ import {
   uploadCertificado,
   processarCertificado,
   fetchCertificados,
+  saveRejectedCertificado,
   CertificadoMeta,
 } from "@/services/certificadoService";
 import { fetchCursoById, Curso } from "@/services/cursoService";
@@ -121,7 +122,24 @@ const HorasComplementares: React.FC = () => {
             }
           } catch (err: any) {
             console.error("Erro na validação do certificado:", err);
-            toast.error(err.message || "Erro ao validar o certificado. Tente novamente.");
+            const motivo = err.message || "Erro ao validar o certificado";
+            toast.error(motivo);
+
+            // Salva registro de rejeição no histórico do aluno
+            try {
+              await saveRejectedCertificado({
+                uid: user.uid,
+                nomeArquivo: file.name,
+                motivoRejeicao: motivo,
+                encontrados: err.encontrados,
+              });
+              loadCertificados();
+            } catch (saveErr) {
+              console.warn("Falha ao salvar rejeição no histórico:", saveErr);
+            }
+
+            setFile(null);
+            setProgress(0);
           } finally {
             setUploading(false);
           }

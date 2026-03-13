@@ -84,7 +84,9 @@ export async function processarCertificado(
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error || "Erro ao processar certificado");
+    const error: any = new Error(data.error || "Erro ao processar certificado");
+    error.encontrados = data.encontrados;
+    throw error;
   }
   return data;
 }
@@ -149,6 +151,37 @@ export async function fetchCertificados(uid: string): Promise<CertificadoMeta[]>
       return tb - ta;
     });
   }
+}
+
+export async function saveRejectedCertificado(data: {
+  uid: string;
+  nomeArquivo: string;
+  motivoRejeicao: string;
+  encontrados?: string[];
+}): Promise<string> {
+  const docRef = await addDoc(collection(db, COLLECTION), {
+    uid: data.uid,
+    nomeArquivo: data.nomeArquivo,
+    storagePath: "",
+    downloadURL: "",
+    contentType: "application/pdf",
+    tamanhoBytes: 0,
+    status: "rejeitado",
+    role: "aluno",
+    observacaoAluno: "",
+    horasInformadas: null,
+    horasAprovadas: null,
+    observacaoAdmin: null,
+    motivoRejeicao: data.motivoRejeicao,
+    nomeAdmin: "Sistema",
+    analisadoPor: "sistema",
+    dataAnalise: serverTimestamp(),
+    analiseSeguranca: "rejeitado",
+    encontradosSuspeitos: data.encontrados || [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
 }
 
 export function formatFileSize(bytes: number): string {
