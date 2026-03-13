@@ -89,9 +89,9 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
               <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
             <DropdownMenuSeparator className="md:hidden" />
-            <DropdownMenuItem disabled>
-              <User className="h-4 w-4 mr-2" />
-              Meu perfil
+            <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Configurações
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
