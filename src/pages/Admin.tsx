@@ -543,6 +543,7 @@ const Admin: React.FC = () => {
         onAprovar={handleAprovar}
         onRejeitar={handleRejeitar}
       />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };
