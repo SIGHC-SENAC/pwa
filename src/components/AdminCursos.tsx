@@ -285,6 +285,16 @@ const AdminCursos: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Horas complementares exigidas</label>
+              <Input
+                type="number"
+                min={1}
+                value={cargaHoraria}
+                onChange={(e) => setCargaHoraria(e.target.value)}
+                placeholder="Ex: 200"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
