@@ -10,6 +10,7 @@ import {
   fetchCertificados,
   CertificadoMeta,
 } from "@/services/certificadoService";
+import { fetchCursoById, Curso } from "@/services/cursoService";
 import AlunoHeader from "@/components/AlunoHeader";
 import DashboardCards from "@/components/DashboardCards";
 import FloatingUploadButton from "@/components/FloatingUploadButton";
