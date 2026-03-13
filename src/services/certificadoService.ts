@@ -58,12 +58,35 @@ export function uploadCertificado(
 ): { task: UploadTask; storagePath: string } {
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storagePath = `certificados/${uid}/${timestamp}-${safeName}`;
+  const storagePath = `certificados_temp/${uid}/${timestamp}-${safeName}`;
   const storageRef = ref(storage, storagePath);
   const task = uploadBytesResumable(storageRef, file, {
     contentType: "application/pdf",
   });
   return { task, storagePath };
+}
+
+const API_BASE = "https://us-central1-pi-3p-tads049.cloudfunctions.net/app";
+
+export async function processarCertificado(
+  uid: string,
+  storagePath: string,
+  nomeArquivo: string,
+  token: string
+): Promise<{ ok: boolean; finalPath?: string; error?: string; encontrados?: string[] }> {
+  const res = await fetch(`${API_BASE}/certificados/processar`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ uid, storagePath, nomeArquivo }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Erro ao processar certificado");
+  }
+  return data;
 }
 
 export async function saveCertificadoMeta(data: {
