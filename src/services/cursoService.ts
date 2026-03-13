@@ -1,4 +1,5 @@
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 const API_BASE = "https://us-central1-pi-3p-tads049.cloudfunctions.net/app";
 
@@ -22,10 +23,10 @@ export interface Curso {
 }
 
 export async function fetchCursoById(id: string): Promise<Curso> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/cursos/${id}`, { headers });
-  if (!res.ok) throw new Error("Erro ao buscar curso");
-  return res.json();
+  // Busca direto do Firestore (acessível ao aluno sem precisar de role admin)
+  const snap = await getDoc(doc(db, "cursos", id));
+  if (!snap.exists()) throw new Error("Curso não encontrado");
+  return { id: snap.id, ...snap.data() } as Curso;
 }
 
 export interface AlunoPayload {

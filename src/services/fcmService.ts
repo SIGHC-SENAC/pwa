@@ -167,7 +167,7 @@ export async function requestPermissionAndGetToken(userId: string): Promise<stri
 
     return token;
   } catch (err) {
-    console.error("Erro ao obter token FCM:", err);
+    console.warn("FCM indisponível (push bloqueado ou sem permissão):", (err as Error)?.message || err);
     return null;
   }
 }
