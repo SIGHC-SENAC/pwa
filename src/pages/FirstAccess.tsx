@@ -52,11 +52,11 @@ const FirstAccess: React.FC = () => {
           <img src={senacLogo} alt="Logo Senac" className="h-20 w-auto" />
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-foreground">
-              Projeto Integrador 3º Período
+              Sistema integrado de gestão de Horas complementares
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Sistema Acadêmico de Horas Complementares
-            </p>
+            <h1 className="text-xl font-bold text-foreground">
+              SIGHC
+            </h1>
           </div>
         </div>
 

@@ -52,7 +52,7 @@ const AlunoHeader: React.FC<AlunoHeaderProps> = ({ userName, userEmail }) => {
           <div className="hidden sm:block h-8 w-px bg-border" />
           <div className="hidden sm:block min-w-0">
             <p className="text-sm font-bold text-primary leading-tight">
-              Projeto Integrador 3º Período
+              Sistema integrado de gestão
             </p>
             <p className="text-[11px] text-muted-foreground leading-tight">
               Horas Complementares

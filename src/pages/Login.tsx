@@ -71,11 +71,10 @@ const Login: React.FC = () => {
           />
           <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight">
-              Projeto Integrador 3º Período
+              Sistema integrado de gestão de horas complementares
             </h1>
-            <p className="text-lg font-medium text-primary-foreground/80">
-              Sistema Acadêmico de Horas Complementares
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              SIGHC</h1>
           </div>
           <div className="mt-4 max-w-sm">
             <p className="text-sm text-primary-foreground/60 leading-relaxed">
@@ -96,11 +95,9 @@ const Login: React.FC = () => {
           />
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-foreground">
-              Projeto Integrador 3º Período
+              Sistema integrado de gestão de horas complementares  SIGHC
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Sistema Acadêmico de Horas Complementares
-            </p>
+          
           </div>
         </div>
 
