@@ -99,7 +99,6 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       }))
       .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
   }, [certificados]);
-  const [chartsOpen, setChartsOpen] = useState(false);
   const isLoading = loading || loadingAlunos;
 
   if (isLoading) {
