@@ -62,9 +62,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 const senacLogo = "/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
-import AdminCursos from "@/components/AdminCursos";
-import AdminAddAluno from "@/components/AdminAddAluno";
 import SettingsDialog from "@/components/SettingsDialog";
+import AdminDashboardCharts from "@/components/AdminDashboardCharts";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
@@ -206,13 +205,6 @@ const Admin: React.FC = () => {
     );
   }
 
-  const summaryCards = [
-    { label: "Total", value: stats.total, icon: FileText, bgColor: "bg-primary/10", iconColor: "text-primary" },
-    { label: "Pendentes", value: stats.pendentes, icon: Clock, bgColor: "bg-secondary/10", iconColor: "text-secondary" },
-    { label: "Aprovados", value: stats.aprovados, icon: CheckCircle2, bgColor: "bg-success/10", iconColor: "text-success" },
-    { label: "Rejeitados", value: stats.rejeitados, icon: XCircle, bgColor: "bg-destructive/10", iconColor: "text-destructive" },
-    { label: "Horas aprovadas", value: stats.horasTotal, icon: Award, bgColor: "bg-secondary/10", iconColor: "text-secondary" },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -288,22 +280,8 @@ const Admin: React.FC = () => {
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
         {(<>
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {summaryCards.map((s) => (
-            <Card key={s.label} className="shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-                <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${s.bgColor}`}>
-                  <s.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.iconColor}`} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{s.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Dashboard Charts */}
+        <AdminDashboardCharts certificados={certificados} loading={loading} />
 
         {/* Aluno View Banner */}
         {alunoView && (() => {
