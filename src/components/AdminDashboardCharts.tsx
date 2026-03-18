@@ -36,6 +36,7 @@ const PIE_COLORS = [COLORS.approved, COLORS.rejected, COLORS.pending];
 const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
+  const [chartsOpen, setChartsOpen] = useState(false);
 
   useEffect(() => {
     const fetchAlunos = async () => {
@@ -98,7 +99,6 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       }))
       .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
   }, [certificados]);
-  const [chartsOpen, setChartsOpen] = useState(false);
   const isLoading = loading || loadingAlunos;
 
   if (isLoading) {
