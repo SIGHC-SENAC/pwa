@@ -24,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<HorasComplementares />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/first-access" element={<FirstAccess />} />
