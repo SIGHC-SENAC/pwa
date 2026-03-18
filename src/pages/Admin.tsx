@@ -86,7 +86,7 @@ const ITEMS_PER_PAGE = 15;
 const Admin: React.FC = () => {
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = userData?.role === "admin";
+  const isAdmin = userData?.role === "admin" || userData?.role === "superAdmin";
   const isMobile = useIsMobile();
 
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
