@@ -489,34 +489,6 @@ const Admin: React.FC = () => {
           )}
         </div>
 
-        {/* Students Summary */}
-        {!alunoView && alunosSummary.size > 0 && (
-          <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3 sm:mb-4">
-              <Users className="h-5 w-5 text-primary" />
-              <h2 className="text-base sm:text-lg font-bold text-foreground">Resumo por aluno</h2>
-            </div>
-            <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from(alunosSummary.entries()).map(([uid, al]) => (
-                <button
-                  key={uid}
-                  onClick={() => setAlunoView(uid)}
-                  className="text-left rounded-lg border p-3 sm:p-4 transition-all hover:shadow-md hover:border-primary/30 bg-background"
-                >
-                  <p className="font-medium text-foreground text-sm truncate">{al.nome}</p>
-                  <p className="text-xs text-muted-foreground mb-2 truncate">{al.email}</p>
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
-                    <span className="rounded-full bg-muted px-2 py-0.5">{al.total} envios</span>
-                    <span className="rounded-full bg-success/15 text-success px-2 py-0.5">{al.aprovados} aprov.</span>
-                    <span className="rounded-full bg-destructive/15 text-destructive px-2 py-0.5">{al.rejeitados} rej.</span>
-                    <span className="rounded-full bg-secondary/15 text-secondary px-2 py-0.5">{al.pendentes} pend.</span>
-                    <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 font-medium">{al.horas}h</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
         </>)}
       </main>
 
