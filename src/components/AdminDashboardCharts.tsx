@@ -82,7 +82,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   const alunoChartData = useMemo(() => {
     const map = new Map<string, { nome: string; aprovados: number; rejeitados: number; pendentes: number }>();
     certificados.forEach((c) => {
-      const existing = map.get(c.uid) || { nome: c.nomeAluno, aprovados: 0, rejeitados: 0, pendentes: 0 };
+      const existing = map.get(c.uid) || { nome: c.nomeAluno || "Sem nome", aprovados: 0, rejeitados: 0, pendentes: 0 };
       if (c.status === "aprovado") existing.aprovados++;
       else if (c.status === "rejeitado") existing.rejeitados++;
       else existing.pendentes++;
@@ -90,7 +90,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
     });
     return Array.from(map.values())
       .map((a) => ({
-        nome: a.nome.length > 15 ? a.nome.slice(0, 15) + "…" : a.nome,
+        nome: (a.nome || "Sem nome").length > 15 ? (a.nome || "Sem nome").slice(0, 15) + "…" : (a.nome || "Sem nome"),
         Aprovados: a.aprovados,
         Rejeitados: a.rejeitados,
         Pendentes: a.pendentes,
