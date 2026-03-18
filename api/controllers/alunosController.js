@@ -1,6 +1,23 @@
 import { db, auth_firebase } from "../config/firebase.js";
 import { transporter } from "../config/nodemailer.js";
 
+// GET /alunos
+export async function listarAlunos(req, res) {
+  try {
+    const { cursoId } = req.query;
+    let query = db.collection("users").where("role", "==", "aluno");
+    if (cursoId) {
+      query = query.where("cursoId", "==", cursoId);
+    }
+    const snapshot = await query.get();
+    const alunos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return res.json(alunos);
+  } catch (error) {
+    console.error("Erro ao listar alunos:", error);
+    return res.status(500).json({ message: "Erro ao listar alunos." });
+  }
+}
+
 // POST /alunos
 export async function criarAluno(req, res) {
   try {

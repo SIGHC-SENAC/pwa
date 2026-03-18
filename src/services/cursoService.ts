@@ -77,6 +77,24 @@ export async function deleteCurso(id: string): Promise<void> {
 
 // ── Alunos ──
 
+export interface Aluno {
+  id: string;
+  nome: string;
+  email: string;
+  cursoId: string;
+  cursoCodigo?: string;
+  cursoNome?: string;
+  createdAt?: number;
+}
+
+export async function fetchAlunos(cursoId?: string): Promise<Aluno[]> {
+  const headers = await getAuthHeaders();
+  const params = cursoId ? `?cursoId=${cursoId}` : "";
+  const res = await fetch(`${API_BASE}/alunos${params}`, { headers });
+  if (!res.ok) throw new Error("Erro ao buscar alunos");
+  return res.json();
+}
+
 export async function createAluno(payload: AlunoPayload): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/alunos`, {
