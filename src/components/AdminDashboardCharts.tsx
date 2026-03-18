@@ -97,6 +97,15 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       }))
       .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
   }, [certificados]);
+  const isLoading = loading || loadingAlunos;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
