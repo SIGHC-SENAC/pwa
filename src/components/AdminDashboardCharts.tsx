@@ -3,11 +3,12 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CertificadoMeta } from "@/services/certificadoService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { Loader2, Users, FileCheck, FileX, Upload } from "lucide-react";
+import { Loader2, Users, FileCheck, FileX, Upload, ChevronDown } from "lucide-react";
 
 interface Props {
   certificados: CertificadoMeta[];
@@ -97,6 +98,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       }))
       .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
   }, [certificados]);
+  const [chartsOpen, setChartsOpen] = useState(false);
   const isLoading = loading || loadingAlunos;
 
   if (isLoading) {
@@ -108,133 +110,131 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Pie chart - Certificate status */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
-              Status dos Certificados
-            </CardTitle>
+    <Collapsible open={chartsOpen} onOpenChange={setChartsOpen}>
+      <Card className="shadow-sm">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
+                📊 Dashboard — Gráficos
+              </CardTitle>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${chartsOpen ? "rotate-180" : ""}`} />
+            </div>
           </CardHeader>
-          <CardContent>
-            {certificados.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Nenhum certificado registrado</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie
-                    data={pieData.filter(d => d.value > 0)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={3}
-                    dataKey="value"
-                    label={({ name, value, x, y, textAnchor }) => (
-                      <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="hsl(var(--foreground))" fontSize={12}>
-                        {`${name}: ${value}`}
-                      </text>
-                    )}
-                    labelLine={true}
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "12px" }}
-                    formatter={(value) => <span className="text-foreground">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Pie chart - Certificate status */}
+              <div className="rounded-lg border bg-background p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Status dos Certificados</p>
+                {certificados.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum certificado registrado</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie
+                        data={pieData.filter(d => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={90}
+                        paddingAngle={3}
+                        dataKey="value"
+                        label={({ name, value, x, y, textAnchor }) => (
+                          <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="hsl(var(--foreground))" fontSize={12}>
+                            {`${name}: ${value}`}
+                          </text>
+                        )}
+                        labelLine={true}
+                      >
+                        {pieData.map((_, i) => (
+                          <Cell key={i} fill={PIE_COLORS[i]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "12px" }}
+                        formatter={(value) => <span className="text-foreground">{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Bar chart - Alunos por curso */}
+              <div className="rounded-lg border bg-background p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Alunos por Curso</p>
+                {stats.cursoAlunos.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum dado disponível</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ left: 10, right: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis
+                        type="category"
+                        dataKey="curso"
+                        width={120}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        formatter={(value: number) => [`${value} alunos`, "Total"]}
+                      />
+                      <Bar dataKey="total" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* Bar chart - Resumo por aluno */}
+            {alunoChartData.length > 0 && (
+              <div className="rounded-lg border bg-background p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Resumo por Aluno</p>
+                <ResponsiveContainer width="100%" height={Math.max(260, alunoChartData.length * 40)}>
+                  <BarChart data={alunoChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                    <YAxis
+                      type="category"
+                      dataKey="nome"
+                      width={130}
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
+                    <Bar dataKey="Aprovados" stackId="a" fill={COLORS.approved} radius={[0, 0, 0, 0]} barSize={20} />
+                    <Bar dataKey="Rejeitados" stackId="a" fill={COLORS.rejected} radius={[0, 0, 0, 0]} barSize={20} />
+                    <Bar dataKey="Pendentes" stackId="a" fill={COLORS.pending} radius={[0, 4, 4, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
-        </Card>
-
-        {/* Bar chart - Alunos por curso */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
-              Alunos por Curso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats.cursoAlunos.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Nenhum dado disponível</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ left: 10, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis
-                    type="category"
-                    dataKey="curso"
-                    width={120}
-                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: number) => [`${value} alunos`, "Total"]}
-                  />
-                  <Bar dataKey="total" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bar chart - Resumo por aluno */}
-      {alunoChartData.length > 0 && (
-        <Card className="shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
-              Resumo por Aluno
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={Math.max(260, alunoChartData.length * 40)}>
-              <BarChart data={alunoChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
-                <YAxis
-                  type="category"
-                  dataKey="nome"
-                  width={130}
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Bar dataKey="Aprovados" stackId="a" fill={COLORS.approved} radius={[0, 0, 0, 0]} barSize={20} />
-                <Bar dataKey="Rejeitados" stackId="a" fill={COLORS.rejected} radius={[0, 0, 0, 0]} barSize={20} />
-                <Bar dataKey="Pendentes" stackId="a" fill={COLORS.pending} radius={[0, 4, 4, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };
 
