@@ -3,11 +3,12 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CertificadoMeta } from "@/services/certificadoService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { Loader2, Users, FileCheck, FileX, Upload } from "lucide-react";
+import { Loader2, Users, FileCheck, FileX, Upload, ChevronDown } from "lucide-react";
 
 interface Props {
   certificados: CertificadoMeta[];
