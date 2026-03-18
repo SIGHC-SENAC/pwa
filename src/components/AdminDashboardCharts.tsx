@@ -130,15 +130,19 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
-                    data={pieData}
+                    data={pieData.filter(d => d.value > 0)}
                     cx="50%"
                     cy="50%"
                     innerRadius={55}
                     outerRadius={90}
                     paddingAngle={3}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                    labelLine={false}
+                    label={({ name, value, x, y, textAnchor }) => (
+                      <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="hsl(var(--foreground))" fontSize={12}>
+                        {`${name}: ${value}`}
+                      </text>
+                    )}
+                    labelLine={true}
                   >
                     {pieData.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i]} />
