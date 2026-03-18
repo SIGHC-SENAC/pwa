@@ -205,13 +205,6 @@ const Admin: React.FC = () => {
     );
   }
 
-  const summaryCards = [
-    { label: "Total", value: stats.total, icon: FileText, bgColor: "bg-primary/10", iconColor: "text-primary" },
-    { label: "Pendentes", value: stats.pendentes, icon: Clock, bgColor: "bg-secondary/10", iconColor: "text-secondary" },
-    { label: "Aprovados", value: stats.aprovados, icon: CheckCircle2, bgColor: "bg-success/10", iconColor: "text-success" },
-    { label: "Rejeitados", value: stats.rejeitados, icon: XCircle, bgColor: "bg-destructive/10", iconColor: "text-destructive" },
-    { label: "Horas aprovadas", value: stats.horasTotal, icon: Award, bgColor: "bg-secondary/10", iconColor: "text-secondary" },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
