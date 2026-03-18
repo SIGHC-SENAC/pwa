@@ -90,7 +90,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
     });
     return Array.from(map.values())
       .map((a) => ({
-        nome: a.nome.length > 15 ? a.nome.slice(0, 15) + "…" : a.nome,
+        nome: (a.nome || "Sem nome").length > 15 ? (a.nome || "Sem nome").slice(0, 15) + "…" : (a.nome || "Sem nome"),
         Aprovados: a.aprovados,
         Rejeitados: a.rejeitados,
         Pendentes: a.pendentes,
