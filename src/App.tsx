@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import HorasComplementares from "./pages/HorasComplementares";
 import Admin from "./pages/Admin";
+import SuperAdmin from "./pages/SuperAdmin";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import FirstAccess from "./pages/FirstAccess";
