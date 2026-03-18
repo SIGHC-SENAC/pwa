@@ -17,6 +17,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   isAluno: boolean;
+  isSuperAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
