@@ -1,4 +1,5 @@
 import { db, auth_firebase } from "../config/firebase.js";
+import { transporter } from "../config/nodemailer.js";
 
 // GET /admins - listar admins
 export async function listarAdmins(req, res) {

@@ -34,7 +34,9 @@ const Login: React.FC = () => {
           if (userDoc.exists()) role = userDoc.data().role || "";
         } catch {}
       }
-      if (role === "admin") {
+      if (role === "superAdmin") {
+        navigate("/super-admin");
+      } else if (role === "admin") {
         navigate("/admin");
       } else {
         navigate("/");
