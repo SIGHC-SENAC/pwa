@@ -62,9 +62,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 const senacLogo = "/senac-logo.png";
 import NotificationBell from "@/components/NotificationBell";
-import AdminCursos from "@/components/AdminCursos";
-import AdminAddAluno from "@/components/AdminAddAluno";
 import SettingsDialog from "@/components/SettingsDialog";
+import AdminDashboardCharts from "@/components/AdminDashboardCharts";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30" },
