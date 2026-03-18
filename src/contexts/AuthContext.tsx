@@ -82,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const isAluno = userData?.role === "aluno";
+  const isSuperAdmin = userData?.role === "superAdmin";
 
   return (
     <AuthContext.Provider value={{ user, userData, loading, isAluno }}>
