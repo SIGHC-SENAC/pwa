@@ -88,32 +88,8 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
     );
   }
 
-  const summaryCards = [
-    { label: "Sem uploads", value: stats.semUpload, icon: Upload, bg: "bg-muted", color: "text-muted-foreground" },
-    { label: "Aprovados", value: stats.aprovados, icon: FileCheck, bg: "bg-success/10", color: "text-success" },
-    { label: "Rejeitados", value: stats.rejeitados, icon: FileX, bg: "bg-destructive/10", color: "text-destructive" },
-    { label: "Alunos", value: alunos.length, icon: Users, bg: "bg-primary/10", color: "text-primary" },
-  ];
-
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-        {summaryCards.map((s) => (
-          <Card key={s.label} className="shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-              <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${s.bg}`}>
-                <s.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${s.color}`} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{s.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pie chart - Certificate status */}
