@@ -36,6 +36,7 @@ const PIE_COLORS = [COLORS.approved, COLORS.rejected, COLORS.pending];
 const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
+  const [chartsOpen, setChartsOpen] = useState(false);
 
   useEffect(() => {
     const fetchAlunos = async () => {
