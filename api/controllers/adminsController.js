@@ -39,6 +39,30 @@ export async function criarAdmin(req, res) {
       createdBy: req.user.uid,
     });
 
+    // Enviar e-mail com credenciais temporárias
+    try {
+      await transporter.sendMail({
+        from: `"SIGHC - Senac" <${process.env.USER_GMAIL}>`,
+        to: email,
+        subject: "Suas credenciais de acesso ao SIGHC",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+            <h2 style="color: #003366;">Bem-vindo ao SIGHC</h2>
+            <p>Olá <strong>${nome}</strong>,</p>
+            <p>Sua conta de administrador foi criada com sucesso. Use as credenciais abaixo para acessar o sistema:</p>
+            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>E-mail:</strong> ${email}</p>
+              <p style="margin: 4px 0;"><strong>Senha temporária:</strong> ${senhaTemporaria}</p>
+            </div>
+            <p style="color: #ef4444; font-size: 14px;">⚠️ Recomendamos que altere sua senha no primeiro acesso.</p>
+            <p style="font-size: 12px; color: #9ca3af; margin-top: 24px;">Faculdade Senac Pernambuco</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Erro ao enviar e-mail:", emailError);
+    }
+
     return res.status(201).json({
       uid: userRecord.uid,
       nome,
