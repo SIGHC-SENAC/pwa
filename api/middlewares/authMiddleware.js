@@ -7,7 +7,6 @@ export async function requireAuth(req, res, next) {
 
     if (!token) return res.status(401).json({ error: "Token ausente" });
 
-    // Verifica ID token do Firebase
     const decoded = await auth_firebase.verifyIdToken(token);
 
     req.user = {
@@ -32,5 +31,6 @@ export function requireRole(...allowedRoles) {
   };
 }
 
-export const requireAdmin = [requireAuth, requireRole("admin")];
+export const requireAdmin = [requireAuth, requireRole("admin", "superAdmin")];
+export const requireSuperAdmin = [requireAuth, requireRole("superAdmin")];
 export const requireAluno = [requireAuth, requireRole("aluno")];

@@ -165,6 +165,10 @@ const HorasComplementares: React.FC = () => {
 
   // Not aluno
   if (!isAluno) {
+    if (userData?.role === "superAdmin") {
+      navigate("/super-admin");
+      return null;
+    }
     if (userData?.role === "admin") {
       navigate("/admin");
       return null;

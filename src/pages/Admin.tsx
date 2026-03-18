@@ -86,7 +86,7 @@ const ITEMS_PER_PAGE = 15;
 const Admin: React.FC = () => {
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = userData?.role === "admin";
+  const isAdmin = userData?.role === "admin" || userData?.role === "superAdmin";
   const isMobile = useIsMobile();
 
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
@@ -101,7 +101,6 @@ const Admin: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [alunoView, setAlunoView] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [adminTab, setAdminTab] = useState<"certificados" | "cursos" | "alunos">("certificados");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -288,41 +287,7 @@ const Admin: React.FC = () => {
       </header>
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Admin Navigation Tabs */}
-        <div className="flex gap-1 rounded-lg border bg-card p-1 shadow-sm">
-          <Button
-            variant={adminTab === "certificados" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setAdminTab("certificados")}
-          >
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Certificados</span>
-          </Button>
-          <Button
-            variant={adminTab === "cursos" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setAdminTab("cursos")}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Cursos</span>
-          </Button>
-          <Button
-            variant={adminTab === "alunos" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setAdminTab("alunos")}
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Alunos</span>
-          </Button>
-        </div>
-
-        {adminTab === "cursos" && <AdminCursos />}
-        {adminTab === "alunos" && <AdminAddAluno />}
-
-        {adminTab === "certificados" && (<>
+        {(<>
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {summaryCards.map((s) => (
