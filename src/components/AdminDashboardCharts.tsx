@@ -88,9 +88,28 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
     );
   }
 
+  // Per-student summary data
+  const alunoChartData = useMemo(() => {
+    const map = new Map<string, { nome: string; aprovados: number; rejeitados: number; pendentes: number }>();
+    certificados.forEach((c) => {
+      const existing = map.get(c.uid) || { nome: c.nomeAluno, aprovados: 0, rejeitados: 0, pendentes: 0 };
+      if (c.status === "aprovado") existing.aprovados++;
+      else if (c.status === "rejeitado") existing.rejeitados++;
+      else existing.pendentes++;
+      map.set(c.uid, existing);
+    });
+    return Array.from(map.values())
+      .map((a) => ({
+        nome: a.nome.length > 15 ? a.nome.slice(0, 15) + "…" : a.nome,
+        Aprovados: a.aprovados,
+        Rejeitados: a.rejeitados,
+        Pendentes: a.pendentes,
+      }))
+      .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
+  }, [certificados]);
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pie chart - Certificate status */}
         <Card className="shadow-sm">
@@ -179,6 +198,43 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Bar chart - Resumo por aluno */}
+      {alunoChartData.length > 0 && (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
+              Resumo por Aluno
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={Math.max(260, alunoChartData.length * 40)}>
+              <BarChart data={alunoChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="nome"
+                  width={130}
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "12px" }} />
+                <Bar dataKey="Aprovados" stackId="a" fill={COLORS.approved} radius={[0, 0, 0, 0]} barSize={20} />
+                <Bar dataKey="Rejeitados" stackId="a" fill={COLORS.rejected} radius={[0, 0, 0, 0]} barSize={20} />
+                <Bar dataKey="Pendentes" stackId="a" fill={COLORS.pending} radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
