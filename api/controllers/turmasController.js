@@ -6,9 +6,11 @@ const COLLECTION = "turmas";
 export async function listarTurmas(req, res) {
   try {
     const { cursoId } = req.query;
-    let query = db.collection(COLLECTION).orderBy("criadoEm", "desc");
+    let query;
     if (cursoId) {
-      query = db.collection(COLLECTION).where("cursoId", "==", cursoId).orderBy("criadoEm", "desc");
+      query = db.collection(COLLECTION).where("cursoId", "==", cursoId);
+    } else {
+      query = db.collection(COLLECTION).orderBy("criadoEm", "desc");
     }
     const snapshot = await query.get();
     const turmas = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
