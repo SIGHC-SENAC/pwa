@@ -5,6 +5,7 @@ import notificacoesRoutes from "./routes/notificacoesRouter.js";
 import cursosRoutes from "./routes/cursosRouter.js";
 import certificadosRoutes from "./routes/certificadosRouter.js";
 import adminsRoutes from "./routes/adminsRouter.js";
+import turmasRoutes from "./routes/turmasRouter.js";
 import cors from "cors";
 
 const router = express();
@@ -17,6 +18,7 @@ router.use("/notificacoes", notificacoesRoutes);
 router.use("/cursos", cursosRoutes);
 router.use("/certificados", certificadosRoutes);
 router.use("/admins", adminsRoutes);
+router.use("/turmas", turmasRoutes);
 
 router.get("/", (req, res) => {
   res.json({ status: "API funcionando" });
