@@ -159,7 +159,7 @@ const SuperAdmin: React.FC = () => {
             onClick={() => setActiveTab("admins")}
           >
             <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Administradores</span>
+            <span className="hidden sm:inline">Coordenadores</span>
           </Button>
         </div>
 
