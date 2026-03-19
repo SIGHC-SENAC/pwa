@@ -26,9 +26,9 @@ import {
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import AdminCursos from "@/components/AdminCursos";
-import AdminTurmas from "@/components/AdminTurmas";
 import AdminAddAluno from "@/components/AdminAddAluno";
 import SuperAdminAdmins from "@/components/SuperAdminAdmins";
+import SuperAdminCoordenadores from "@/components/SuperAdminCoordenadores";
 import SettingsDialog from "@/components/SettingsDialog";
 
 const senacLogo = "/senac-logo.png";
@@ -38,7 +38,7 @@ const SuperAdmin: React.FC = () => {
   const navigate = useNavigate();
   const isSuperAdmin = userData?.role === "superAdmin";
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"cursos" | "turmas" | "alunos" | "admins">("cursos");
+  const [activeTab, setActiveTab] = useState<"cursos" | "alunos" | "admins" | "coordenadores">("cursos");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -134,7 +134,7 @@ const SuperAdmin: React.FC = () => {
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
         {/* Navigation Tabs */}
-        <div className="flex gap-1 rounded-lg border bg-card p-1 shadow-sm flex-wrap">
+        <div className="flex gap-1 rounded-lg border bg-card p-1 shadow-sm">
           <Button
             variant={activeTab === "cursos" ? "default" : "ghost"}
             size="sm"
@@ -143,15 +143,6 @@ const SuperAdmin: React.FC = () => {
           >
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Cursos</span>
-          </Button>
-          <Button
-            variant={activeTab === "turmas" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setActiveTab("turmas")}
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Turmas</span>
           </Button>
           <Button
             variant={activeTab === "alunos" ? "default" : "ghost"}
@@ -169,14 +160,23 @@ const SuperAdmin: React.FC = () => {
             onClick={() => setActiveTab("admins")}
           >
             <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Administradores</span>
+          </Button>
+          <Button
+            variant={activeTab === "coordenadores" ? "default" : "ghost"}
+            size="sm"
+            className="flex-1 sm:flex-none gap-2"
+            onClick={() => setActiveTab("coordenadores")}
+          >
+            <GraduationCap className="h-4 w-4" />
             <span className="hidden sm:inline">Coordenadores</span>
           </Button>
         </div>
 
         {activeTab === "cursos" && <AdminCursos />}
-        {activeTab === "turmas" && <AdminTurmas />}
         {activeTab === "alunos" && <AdminAddAluno />}
         {activeTab === "admins" && <SuperAdminAdmins />}
+        {activeTab === "coordenadores" && <SuperAdminCoordenadores />}
       </main>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />

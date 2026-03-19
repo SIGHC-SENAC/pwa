@@ -7,7 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import HorasComplementares from "./pages/HorasComplementares";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
+import Coordenacao from "./pages/Coordenacao";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
 import ForgotPassword from "./pages/ForgotPassword";
 import FirstAccess from "./pages/FirstAccess";
 import NotFound from "./pages/NotFound";
@@ -22,9 +24,14 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public landing page */}
+            <Route path="/landing" element={<Landing />} />
+
+            {/* Authenticated app routes */}
             <Route path="/" element={<HorasComplementares />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/super-admin" element={<SuperAdmin />} />
+            <Route path="/coordenacao" element={<Coordenacao />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/first-access" element={<FirstAccess />} />

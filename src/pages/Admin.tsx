@@ -198,7 +198,7 @@ const Admin: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
-          Esta página é exclusiva para Coordenadores.
+          Esta página é exclusiva para administradores.
         </p>
         <Button variant="outline" onClick={() => navigate("/")}>Voltar</Button>
       </div>

@@ -23,6 +23,7 @@ import {
   History,
   BookOpen,
 } from "lucide-react";
+import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 
 const HorasComplementares: React.FC = () => {
   const { user, userData, loading: authLoading, isAluno } = useAuth();
@@ -202,6 +203,7 @@ const HorasComplementares: React.FC = () => {
       <AlunoHeader userName={userName} userEmail={userEmail} />
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 space-y-6 sm:space-y-8">
+        <EmailVerificationBanner />
         {/* Welcome */}
         <div className="animate-fade-in rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 sm:p-7 text-primary-foreground shadow-md">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

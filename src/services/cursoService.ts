@@ -33,7 +33,6 @@ export interface AlunoPayload {
   nome: string;
   email: string;
   cursoId: string;
-  turmaId?: string;
 }
 
 // ── Cursos CRUD ──
@@ -85,8 +84,6 @@ export interface Aluno {
   cursoId: string;
   cursoCodigo?: string;
   cursoNome?: string;
-  turmaId?: string;
-  turmaNome?: string;
   createdAt?: number;
 }
 

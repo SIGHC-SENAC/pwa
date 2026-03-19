@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
@@ -34,10 +34,17 @@ const Login: React.FC = () => {
           if (userDoc.exists()) role = userDoc.data().role || "";
         } catch {}
       }
+      // Send email verification on first unverified login (silent)
+      if (!cred.user.emailVerified) {
+        try { await sendEmailVerification(cred.user); } catch { /* silent */ }
+      }
+
       if (role === "superAdmin") {
         navigate("/super-admin");
       } else if (role === "admin") {
         navigate("/admin");
+      } else if (role === "coordenador") {
+        navigate("/coordenacao");
       } else {
         navigate("/");
       }
