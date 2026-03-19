@@ -134,7 +134,7 @@ const SuperAdmin: React.FC = () => {
 
       <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
         {/* Navigation Tabs */}
-        <div className="flex gap-1 rounded-lg border bg-card p-1 shadow-sm">
+        <div className="flex gap-1 rounded-lg border bg-card p-1 shadow-sm flex-wrap">
           <Button
             variant={activeTab === "cursos" ? "default" : "ghost"}
             size="sm"
@@ -143,6 +143,15 @@ const SuperAdmin: React.FC = () => {
           >
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Cursos</span>
+          </Button>
+          <Button
+            variant={activeTab === "turmas" ? "default" : "ghost"}
+            size="sm"
+            className="flex-1 sm:flex-none gap-2"
+            onClick={() => setActiveTab("turmas")}
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Turmas</span>
           </Button>
           <Button
             variant={activeTab === "alunos" ? "default" : "ghost"}
@@ -165,6 +174,7 @@ const SuperAdmin: React.FC = () => {
         </div>
 
         {activeTab === "cursos" && <AdminCursos />}
+        {activeTab === "turmas" && <AdminTurmas />}
         {activeTab === "alunos" && <AdminAddAluno />}
         {activeTab === "admins" && <SuperAdminAdmins />}
       </main>
