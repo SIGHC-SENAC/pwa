@@ -203,7 +203,7 @@ const AdminAddAluno: React.FC = () => {
               {/* Turma Selection */}
               {cursoId && (
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Turma (opcional)</label>
+                  <label className="text-sm font-medium text-foreground">Turma</label>
                   {loadingTurmas ? (
                     <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
