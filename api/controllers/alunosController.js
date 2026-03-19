@@ -21,7 +21,7 @@ export async function listarAlunos(req, res) {
 // POST /alunos
 export async function criarAluno(req, res) {
   try {
-    const { nome, email, cursoId } = req.body;
+    const { nome, email, cursoId, turmaId } = req.body;
     if (!nome || !email || !cursoId) {
       return res.status(400).json({ message: "Campos nome, email e cursoId são obrigatórios." });
     }
@@ -30,6 +30,16 @@ export async function criarAluno(req, res) {
     const cursoDoc = await db.collection("cursos").doc(cursoId).get();
     if (!cursoDoc.exists) {
       return res.status(404).json({ message: "Curso não encontrado." });
+    }
+
+    // Verifica turma se informada
+    let turmaNome = null;
+    if (turmaId) {
+      const turmaDoc = await db.collection("turmas").doc(turmaId).get();
+      if (!turmaDoc.exists) {
+        return res.status(404).json({ message: "Turma não encontrada." });
+      }
+      turmaNome = turmaDoc.data().nome;
     }
 
     // Cria usuário no Firebase Auth
@@ -43,7 +53,7 @@ export async function criarAluno(req, res) {
     await auth_firebase.setCustomUserClaims(userRecord.uid, { role: "aluno" });
 
     // Cria documento no Firestore
-    await db.collection("users").doc(userRecord.uid).set({
+    const userData = {
       nome,
       email,
       role: "aluno",
@@ -52,7 +62,13 @@ export async function criarAluno(req, res) {
       cursoNome: cursoDoc.data().nome,
       createdAt: Date.now(),
       createdBy: "admin",
-    });
+    };
+    if (turmaId) {
+      userData.turmaId = turmaId;
+      userData.turmaNome = turmaNome;
+    }
+
+    await db.collection("users").doc(userRecord.uid).set(userData);
 
     const senhaTemporaria = email.split("@")[0] + "2025!";
 

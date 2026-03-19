@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -20,14 +20,18 @@ import {
 import { toast } from "sonner";
 import { Loader2, UserPlus, Users, Search, GraduationCap } from "lucide-react";
 import { fetchCursos, createAluno, fetchAlunos, Curso, Aluno } from "@/services/cursoService";
+import { fetchTurmas, Turma } from "@/services/turmaService";
 
 const AdminAddAluno: React.FC = () => {
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loadingCursos, setLoadingCursos] = useState(true);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [loadingTurmas, setLoadingTurmas] = useState(false);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cursoId, setCursoId] = useState("");
+  const [turmaId, setTurmaId] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Lista de alunos
@@ -45,6 +49,22 @@ const AdminAddAluno: React.FC = () => {
       toast.error("Erro ao carregar cursos.");
     } finally {
       setLoadingCursos(false);
+    }
+  }, []);
+
+  const loadTurmasByCurso = useCallback(async (cId: string) => {
+    if (!cId) {
+      setTurmas([]);
+      return;
+    }
+    setLoadingTurmas(true);
+    try {
+      const data = await fetchTurmas(cId);
+      setTurmas(data);
+    } catch {
+      toast.error("Erro ao carregar turmas.");
+    } finally {
+      setLoadingTurmas(false);
     }
   }, []);
 
@@ -69,10 +89,19 @@ const AdminAddAluno: React.FC = () => {
     loadAlunos();
   }, [loadAlunos]);
 
+  useEffect(() => {
+    setTurmaId("");
+    if (cursoId) {
+      loadTurmasByCurso(cursoId);
+    } else {
+      setTurmas([]);
+    }
+  }, [cursoId, loadTurmasByCurso]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !email.trim() || !cursoId) {
-      toast.error("Preencha todos os campos.");
+      toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -83,11 +112,12 @@ const AdminAddAluno: React.FC = () => {
 
     setSaving(true);
     try {
-      await createAluno({ nome: nome.trim(), email: email.trim(), cursoId });
+      await createAluno({ nome: nome.trim(), email: email.trim(), cursoId, turmaId: turmaId || undefined });
       toast.success("Aluno cadastrado com sucesso! Um e-mail de boas-vindas foi enviado.");
       setNome("");
       setEmail("");
       setCursoId("");
+      setTurmaId("");
       loadAlunos();
     } catch (err: any) {
       toast.error(err.message || "Erro ao cadastrar aluno.");
@@ -112,7 +142,7 @@ const AdminAddAluno: React.FC = () => {
             Cadastrar Aluno
           </h2>
           <p className="text-sm text-muted-foreground">
-            Adicione um aluno vinculado a um curso já cadastrado.
+            Adicione um aluno vinculado a um curso e turma.
           </p>
         </div>
 
@@ -169,6 +199,36 @@ const AdminAddAluno: React.FC = () => {
                   </p>
                 )}
               </div>
+
+              {/* Turma Selection */}
+              {cursoId && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Turma (opcional)</label>
+                  {loadingTurmas ? (
+                    <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando turmas...
+                    </div>
+                  ) : turmas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">
+                      Nenhuma turma cadastrada para este curso.
+                    </p>
+                  ) : (
+                    <Select value={turmaId} onValueChange={setTurmaId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma turma" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {turmas.map((t) => (
+                          <SelectItem key={t.id} value={t.id!}>
+                            {t.nome} — {t.periodoInicio} a {t.periodoFinal} ({t.horario})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
 
               <Button
                 type="submit"
@@ -246,6 +306,7 @@ const AdminAddAluno: React.FC = () => {
                       <TableHead>Nome</TableHead>
                       <TableHead className="hidden sm:table-cell">E-mail</TableHead>
                       <TableHead>Curso</TableHead>
+                      <TableHead className="hidden md:table-cell">Turma</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -259,6 +320,9 @@ const AdminAddAluno: React.FC = () => {
                           <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                             {aluno.cursoNome || aluno.cursoCodigo || "—"}
                           </span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
+                          {aluno.turmaNome || "—"}
                         </TableCell>
                       </TableRow>
                     ))}

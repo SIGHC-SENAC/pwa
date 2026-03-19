@@ -85,6 +85,8 @@ export interface Aluno {
   cursoId: string;
   cursoCodigo?: string;
   cursoNome?: string;
+  turmaId?: string;
+  turmaNome?: string;
   createdAt?: number;
 }
 
