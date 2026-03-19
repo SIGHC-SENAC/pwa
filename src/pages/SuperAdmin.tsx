@@ -38,7 +38,7 @@ const SuperAdmin: React.FC = () => {
   const navigate = useNavigate();
   const isSuperAdmin = userData?.role === "superAdmin";
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"cursos" | "alunos" | "admins">("cursos");
+  const [activeTab, setActiveTab] = useState<"cursos" | "turmas" | "alunos" | "admins">("cursos");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
