@@ -57,7 +57,7 @@ const SuperAdminAdmins: React.FC = () => {
       setAdmins(data);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar administradores.");
+      toast.error("Erro ao carregar Coordenadores.");
     } finally {
       setLoading(false);
     }
@@ -130,15 +130,15 @@ const SuperAdminAdmins: React.FC = () => {
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Gestão de Administradores
+            Gestão de Coordenadores
           </h2>
           <p className="text-sm text-muted-foreground">
-            Adicione e gerencie os administradores do sistema.
+            Adicione e gerencie os Coordenadores do sistema.
           </p>
         </div>
         <Button onClick={openNew} className="gap-2 shrink-0">
           <Plus className="h-4 w-4" />
-          Novo Admin
+          Novo Coordenadores
         </Button>
       </div>
 
