@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import AdminCursos from "@/components/AdminCursos";
+import AdminTurmas from "@/components/AdminTurmas";
 import AdminAddAluno from "@/components/AdminAddAluno";
 import SuperAdminAdmins from "@/components/SuperAdminAdmins";
 import SettingsDialog from "@/components/SettingsDialog";
