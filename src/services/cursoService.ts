@@ -33,6 +33,7 @@ export interface AlunoPayload {
   nome: string;
   email: string;
   cursoId: string;
+  turmaId?: string;
 }
 
 // ── Cursos CRUD ──
