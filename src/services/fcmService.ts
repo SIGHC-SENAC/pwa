@@ -2,7 +2,7 @@ import { getMessaging, getToken, onMessage, isSupported } from "firebase/messagi
 import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import app, { db } from "@/lib/firebase";
 
-const VAPID_KEY = "BHGUjHXChP4IRvphANu9RPlQWfIQq7Gw0WSk3u2R1hfNHv4AxF5P_ixg7_O0jP2LA4m1D7VQOE727BFNgtPmMhA";
+const VAPID_KEY = import.meta.env.VITE_VAPID_KEY;
 const NOTIFICATIONS_STORAGE_KEY = "fcm_notifications";
 
 const DB_NAME = "fcm_notifications_db";

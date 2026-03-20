@@ -66,7 +66,7 @@ export function uploadCertificado(
   return { task, storagePath };
 }
 
-const API_BASE = "https://us-central1-pi-3p-tads049.cloudfunctions.net/app";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export async function processarCertificado(
   uid: string,
