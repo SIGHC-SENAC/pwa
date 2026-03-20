@@ -109,7 +109,7 @@ const HorasComplementares: React.FC = () => {
 
             // Notifica admins em background
             try {
-              await fetch("https://us-central1-pi-3p-tads049.cloudfunctions.net/app/notificacoes/upload-certificado", {
+              await fetch(`${import.meta.env.VITE_API_BASE_URL}/notificacoes/upload-certificado`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
