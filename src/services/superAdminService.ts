@@ -17,6 +17,9 @@ export interface AdminUser {
   nome: string;
   email: string;
   role: string;
+  cursoId?: string;
+  cursoNome?: string;
+  cursoCodigo?: string;
   createdAt?: number;
 }
 
@@ -27,7 +30,7 @@ export async function fetchAdmins(): Promise<AdminUser[]> {
   return res.json();
 }
 
-export async function createAdmin(payload: { nome: string; email: string }): Promise<any> {
+export async function createAdmin(payload: { nome: string; email: string; cursoId: string }): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins`, {
     method: "POST",
@@ -41,7 +44,7 @@ export async function createAdmin(payload: { nome: string; email: string }): Pro
   return res.json();
 }
 
-export async function updateAdmin(id: string, payload: { nome?: string; email?: string }): Promise<any> {
+export async function updateAdmin(id: string, payload: { nome?: string; email?: string; cursoId?: string }): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins/${id}`, {
     method: "PUT",

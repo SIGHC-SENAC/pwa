@@ -10,6 +10,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,9 +43,11 @@ import {
   deleteAdmin,
   AdminUser,
 } from "@/services/superAdminService";
+import { Curso, fetchCursos } from "@/services/cursoService";
 
 const SuperAdminAdmins: React.FC = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -49,6 +58,7 @@ const SuperAdminAdmins: React.FC = () => {
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [cursoId, setCursoId] = useState("");
 
   const loadAdmins = useCallback(async () => {
     setLoading(true);
@@ -67,10 +77,25 @@ const SuperAdminAdmins: React.FC = () => {
     loadAdmins();
   }, [loadAdmins]);
 
+  const loadCursos = useCallback(async () => {
+    try {
+      const data = await fetchCursos();
+      setCursos(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao carregar cursos.");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCursos();
+  }, [loadCursos]);
+
   const openNew = () => {
     setEditing(null);
     setNome("");
     setEmail("");
+    setCursoId("");
     setDialogOpen(true);
   };
 
@@ -78,22 +103,23 @@ const SuperAdminAdmins: React.FC = () => {
     setEditing(admin);
     setNome(admin.nome);
     setEmail(admin.email);
+    setCursoId(admin.cursoId || "");
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !email.trim()) {
+    if (!nome.trim() || !email.trim() || !cursoId) {
       toast.error("Preencha todos os campos.");
       return;
     }
     setSaving(true);
     try {
       if (editing) {
-        await updateAdmin(editing.id, { nome: nome.trim(), email: email.trim() });
-        toast.success("Admin atualizado.");
+        await updateAdmin(editing.id, { nome: nome.trim(), email: email.trim(), cursoId });
+        toast.success("Coordenador atualizado.");
       } else {
-        await createAdmin({ nome: nome.trim(), email: email.trim() });
-        toast.success("Admin cadastrado. A senha temporária foi enviada por e-mail.");
+        await createAdmin({ nome: nome.trim(), email: email.trim(), cursoId });
+        toast.success("Coordenador cadastrado. A senha temporária foi enviada por e-mail.");
       }
       setDialogOpen(false);
       loadAdmins();
@@ -121,7 +147,12 @@ const SuperAdminAdmins: React.FC = () => {
 
   const filtered = admins.filter((a) => {
     const q = searchTerm.toLowerCase();
-    return a.nome.toLowerCase().includes(q) || a.email.toLowerCase().includes(q);
+    return (
+      a.nome.toLowerCase().includes(q) ||
+      a.email.toLowerCase().includes(q) ||
+      (a.cursoNome || "").toLowerCase().includes(q) ||
+      (a.cursoCodigo || "").toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -138,7 +169,7 @@ const SuperAdminAdmins: React.FC = () => {
         </div>
         <Button onClick={openNew} className="gap-2 shrink-0">
           <Plus className="h-4 w-4" />
-          Novo Coordenadores
+          Novo Coordenador
         </Button>
       </div>
 
@@ -162,7 +193,7 @@ const SuperAdminAdmins: React.FC = () => {
             <div className="flex flex-col items-center justify-center py-16 text-center px-4">
               <Shield className="h-10 w-10 text-muted-foreground/30 mb-3" />
               <p className="text-sm text-muted-foreground">
-                {admins.length === 0 ? "Nenhum admin cadastrado." : "Nenhum resultado encontrado."}
+                {admins.length === 0 ? "Nenhum coordenador cadastrado." : "Nenhum resultado encontrado."}
               </p>
             </div>
           ) : (
@@ -171,6 +202,7 @@ const SuperAdminAdmins: React.FC = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail</TableHead>
+                  <TableHead>Curso</TableHead>
                   <TableHead className="w-[100px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -179,6 +211,9 @@ const SuperAdminAdmins: React.FC = () => {
                   <TableRow key={admin.id}>
                     <TableCell className="font-medium">{admin.nome}</TableCell>
                     <TableCell className="text-muted-foreground">{admin.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {admin.cursoNome || "Curso não vinculado"}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(admin)}>
@@ -200,7 +235,7 @@ const SuperAdminAdmins: React.FC = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar Admin" : "Novo Admin"}</DialogTitle>
+            <DialogTitle>{editing ? "Editar Coordenador" : "Novo Coordenador"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -210,6 +245,21 @@ const SuperAdminAdmins: React.FC = () => {
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">E-mail</label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ex: joao@exemplo.com" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Curso</label>
+              <Select value={cursoId} onValueChange={setCursoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um curso" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cursos.filter((curso) => !!curso.id).map((curso) => (
+                    <SelectItem key={curso.id} value={curso.id as string}>
+                      {curso.nome} ({curso.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -225,9 +275,9 @@ const SuperAdminAdmins: React.FC = () => {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir admin?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir coordenador?</AlertDialogTitle>
             <AlertDialogDescription>
-              O admin <strong>{deleteTarget?.nome}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+              O coordenador <strong>{deleteTarget?.nome}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

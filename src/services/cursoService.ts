@@ -45,7 +45,7 @@ export async function fetchCursos(): Promise<Curso[]> {
   return res.json();
 }
 
-export async function createCurso(curso: Omit<Curso, "id" | "criadoEm">): Promise<Curso> {
+export async function createCurso(curso: Omit<Curso, "id" | "criadoEm" | "codigo">): Promise<Curso> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/cursos`, {
     method: "POST",

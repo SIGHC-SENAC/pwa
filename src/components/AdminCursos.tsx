@@ -116,7 +116,7 @@ const AdminCursos: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !codigo.trim() || !cargaHoraria) {
+    if (!nome.trim() || !cargaHoraria) {
       toast.error("Preencha todos os campos.");
       return;
     }
@@ -127,13 +127,14 @@ const AdminCursos: React.FC = () => {
     }
     setSaving(true);
     try {
-      const payload = { nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"], cargaHorariaComplementar: cargaNum };
       if (editing?.id) {
+        const payload = { nome: nome.trim(), codigo: codigo.trim(), turno: turno as Curso["turno"], cargaHorariaComplementar: cargaNum };
         await updateCurso(editing.id, payload);
         toast.success("Curso atualizado.");
       } else {
+        const payload = { nome: nome.trim(), turno: turno as Curso["turno"], cargaHorariaComplementar: cargaNum };
         await createCurso(payload);
-        toast.success("Curso cadastrado.");
+        toast.success("Curso cadastrado com código automático.");
       }
       setDialogOpen(false);
       loadCursos();
@@ -270,7 +271,12 @@ const AdminCursos: React.FC = () => {
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Código</label>
-              <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: TADS-049" />
+              <Input
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                placeholder={editing ? "Código do curso" : "Gerado automaticamente (5 dígitos)"}
+                disabled={!editing}
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Turno</label>
