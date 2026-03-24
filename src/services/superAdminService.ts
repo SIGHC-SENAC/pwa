@@ -33,7 +33,7 @@ export async function fetchAdmins(): Promise<AdminUser[]> {
 export async function createAdmin(payload: { nome: string; email: string; cursoId: string }): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins`, {
-    method: "POST",
+    method: "jPOST",
     headers,
     body: JSON.stringify(payload),
   });
