@@ -75,6 +75,11 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground line-clamp-2 break-all">{cert.nomeArquivo}</p>
+                {cert.categoriaNome && (
+                  <p className="mt-0.5 text-[11px] sm:text-xs text-primary/80 font-medium line-clamp-1">
+                    {cert.categoriaNome}
+                  </p>
+                )}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-muted-foreground">
                   <span>{formatDate(cert.createdAt)}</span>
                   <span className="hidden sm:inline">•</span>

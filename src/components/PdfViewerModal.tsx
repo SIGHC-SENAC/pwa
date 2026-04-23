@@ -144,6 +144,9 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           <div className="break-words"><span className="text-muted-foreground">Aluno:</span> <span className="font-medium text-foreground">{cert.nomeAluno}</span></div>
           <div className="break-words"><span className="text-muted-foreground">E-mail:</span> <span className="font-medium text-foreground">{cert.emailAluno}</span></div>
           <div className="break-words"><span className="text-muted-foreground">Arquivo:</span> <span className="font-medium text-foreground">{cert.nomeArquivo}</span></div>
+          {cert.categoriaNome && (
+            <div className="break-words"><span className="text-muted-foreground">Categoria:</span> <span className="font-medium text-primary">{cert.categoriaNome}</span></div>
+          )}
           <div><span className="text-muted-foreground">Tamanho:</span> <span className="font-medium text-foreground">{formatFileSize(cert.tamanhoBytes)}</span></div>
           <div><span className="text-muted-foreground">Envio:</span> <span className="font-medium text-foreground">{formatDate(cert.createdAt)}</span></div>
           {cert.observacaoAluno && (

@@ -5,40 +5,44 @@ import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import {
   Loader2,
   ShieldAlert,
   LogOut,
   BookOpen,
   Users,
   Shield,
-  ChevronDown,
   Settings,
   Crown,
   GraduationCap,
+  Building2,
+  LayoutDashboard,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import AdminCursos from "@/components/AdminCursos";
 import AdminTurmas from "@/components/AdminTurmas";
 import AdminAddAluno from "@/components/AdminAddAluno";
 import SuperAdminAdmins from "@/components/SuperAdminAdmins";
+import SuperAdminDashboard from "@/components/SuperAdminDashboard";
 import SettingsDialog from "@/components/SettingsDialog";
 
 const senacLogo = "/senac-logo.png";
+
+type Tab = "dashboard" | "cursos" | "turmas" | "alunos" | "admins";
+
+const navItems: { id: Tab; label: string; icon: React.ElementType; description: string }[] = [
+  { id: "dashboard", label: "Dashboard",    icon: LayoutDashboard, description: "Visão geral do sistema" },
+  { id: "cursos",    label: "Cursos",        icon: BookOpen,        description: "Gerencie os cursos" },
+  { id: "turmas",    label: "Turmas",        icon: Users,           description: "Gerencie as turmas" },
+  { id: "alunos",    label: "Alunos",        icon: GraduationCap,   description: "Cadastre e visualize alunos" },
+  { id: "admins",    label: "Coordenadores", icon: Shield,          description: "Gerencie coordenadores" },
+];
 
 const SuperAdmin: React.FC = () => {
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isSuperAdmin = userData?.role === "superAdmin";
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"cursos" | "turmas" | "alunos" | "admins">("cursos");
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -69,11 +73,16 @@ const SuperAdmin: React.FC = () => {
     );
   }
 
+  const activeItem = navItems.find((n) => n.id === activeTab)!;
+  const displayName = userData?.nome || user.displayName || "SuperAdmin";
+  const initials = displayName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-card shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-40 border-b bg-card shadow-sm shrink-0">
+        <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex items-center gap-3 min-w-0">
             <img src={senacLogo} alt="Senac Pernambuco" className="h-9 sm:h-10 w-auto object-contain" />
             <div className="hidden sm:block h-8 w-px bg-border" />
@@ -88,96 +97,164 @@ const SuperAdmin: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 sm:gap-3">
             <NotificationBell userId={user?.uid} />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 px-2 sm:px-3 h-auto py-1.5 hover:bg-muted">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    <Crown className="h-4 w-4" />
-                  </div>
-                  <div className="hidden md:block text-left min-w-0">
-                    <p className="text-sm font-medium text-foreground leading-tight truncate max-w-[160px]">
-                      {userData?.nome || user.displayName || "SuperAdmin"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground leading-tight truncate max-w-[160px]">
-                      {user.email}
-                    </p>
-                  </div>
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-3 py-2 md:hidden">
-                  <p className="text-sm font-medium text-foreground truncate">{userData?.nome || "SuperAdmin"}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                </div>
-                <DropdownMenuSeparator className="md:hidden" />
-                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurações
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => { await signOut(auth); navigate("/login"); }}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair do sistema
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+            {/* Unidade — display estático */}
+            <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-1.5 shadow-sm">
+              <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="hidden sm:inline text-sm font-medium text-foreground">
+                Faculdade Senac PE
+              </span>
+            </div>
           </div>
         </div>
         <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
       </header>
 
-      <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Navigation Tabs */}
-        <div className="flex gap-1 rounded-lg border bg-card p-1 shadow-sm flex-wrap">
-          <Button
-            variant={activeTab === "cursos" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setActiveTab("cursos")}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Cursos</span>
-          </Button>
-          <Button
-            variant={activeTab === "turmas" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setActiveTab("turmas")}
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Turmas</span>
-          </Button>
-          <Button
-            variant={activeTab === "alunos" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setActiveTab("alunos")}
-          >
-            <GraduationCap className="h-4 w-4" />
-            <span className="hidden sm:inline">Alunos</span>
-          </Button>
-          <Button
-            variant={activeTab === "admins" ? "default" : "ghost"}
-            size="sm"
-            className="flex-1 sm:flex-none gap-2"
-            onClick={() => setActiveTab("admins")}
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Coordenadores</span>
-          </Button>
+      {/* ── Body ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── Sidebar (desktop) ── */}
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-card overflow-y-auto">
+
+          {/* Label de seção */}
+          <div className="px-4 pt-5 pb-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+              Menu
+            </p>
+          </div>
+
+          {/* Nav items */}
+          <nav className="flex flex-col gap-0.5 px-2 flex-1">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`
+                    group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
+                    transition-all duration-150 w-full text-left
+                    ${isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                    }
+                  `}
+                >
+                  {/* Icon container */}
+                  <span className={`
+                    flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors
+                    ${isActive
+                      ? "bg-white/20"
+                      : "bg-muted group-hover:bg-background"
+                    }
+                  `}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+
+                  <span className="truncate">{label}</span>
+
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Divider */}
+          <div className="mx-3 my-3 h-px bg-border" />
+
+          {/* User footer */}
+          <div className="px-3 pb-4">
+            <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                {initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+              </div>
+            </div>
+
+            <div className="mt-2 flex gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Config.
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                onClick={async () => { await signOut(auth); navigate("/login"); }}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Mobile nav (bottom bar) ── */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-card shadow-[0_-1px_8px_rgba(0,0,0,0.08)]">
+          <div className="flex">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className="flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors"
+                >
+                  <span className={`
+                    flex h-6 w-6 items-center justify-center rounded-md transition-colors
+                    ${isActive ? "text-primary" : "text-muted-foreground"}
+                  `}>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                    {label}
+                  </span>
+                  {isActive && (
+                    <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {activeTab === "cursos" && <AdminCursos />}
-        {activeTab === "turmas" && <AdminTurmas />}
-        {activeTab === "alunos" && <AdminAddAluno />}
-        {activeTab === "admins" && <SuperAdminAdmins />}
-      </main>
+        {/* ── Main content ── */}
+        <main className="flex-1 min-w-0 overflow-y-auto bg-background">
+          {/* Page heading */}
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 px-5 py-3.5 sm:px-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                {(() => { const Icon = activeItem.icon; return <Icon className="h-4 w-4 text-primary" />; })()}
+              </div>
+              <div>
+                <h1 className="text-sm font-bold text-foreground leading-tight">{activeItem.label}</h1>
+                <p className="text-xs text-muted-foreground">{activeItem.description}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-5 sm:px-8 sm:py-6 pb-24 md:pb-8 space-y-4">
+            {activeTab === "dashboard" && <SuperAdminDashboard />}
+            {activeTab === "cursos"    && <AdminCursos />}
+            {activeTab === "turmas"    && <AdminTurmas />}
+            {activeTab === "alunos"    && <AdminAddAluno />}
+            {activeTab === "admins"    && <SuperAdminAdmins />}
+          </div>
+        </main>
+      </div>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>

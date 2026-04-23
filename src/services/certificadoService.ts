@@ -31,6 +31,8 @@ export interface CertificadoMeta {
   tamanhoBytes: number;
   status: "pendente" | "aprovado" | "rejeitado";
   observacaoAluno: string;
+  categoriaId: string | null;
+  categoriaNome: string | null;
   horasInformadas: number | null;
   horasAprovadas: number | null;
   observacaoAdmin: string | null;
@@ -72,7 +74,9 @@ export async function processarCertificado(
   uid: string,
   storagePath: string,
   nomeArquivo: string,
-  token: string
+  token: string,
+  categoriaId?: string | null,
+  categoriaNome?: string | null
 ): Promise<{ ok: boolean; finalPath?: string; error?: string; encontrados?: string[] }> {
   const res = await fetch(`${API_BASE}/certificados/processar`, {
     method: "POST",
@@ -80,7 +84,7 @@ export async function processarCertificado(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ uid, storagePath, nomeArquivo }),
+    body: JSON.stringify({ uid, storagePath, nomeArquivo, categoriaId, categoriaNome }),
   });
   const data = await res.json();
   if (!res.ok) {
@@ -100,6 +104,8 @@ export async function saveCertificadoMeta(data: {
   downloadURL: string;
   tamanhoBytes: number;
   observacaoAluno: string;
+  categoriaId: string | null;
+  categoriaNome: string | null;
 }): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     ...data,
@@ -158,6 +164,8 @@ export async function saveRejectedCertificado(data: {
   nomeArquivo: string;
   motivoRejeicao: string;
   encontrados?: string[];
+  categoriaId?: string | null;
+  categoriaNome?: string | null;
 }): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     uid: data.uid,
@@ -169,6 +177,8 @@ export async function saveRejectedCertificado(data: {
     status: "rejeitado",
     role: "aluno",
     observacaoAluno: "",
+    categoriaId: data.categoriaId ?? null,
+    categoriaNome: data.categoriaNome ?? null,
     horasInformadas: null,
     horasAprovadas: null,
     observacaoAdmin: null,

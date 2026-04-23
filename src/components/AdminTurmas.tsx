@@ -308,7 +308,16 @@ const AdminTurmas: React.FC = () => {
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Horário</label>
-              <Input value={horario} onChange={(e) => setHorario(e.target.value)} placeholder="Ex: 19:00 - 22:00" />
+              <Select value={horario} onValueChange={setHorario}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o horário" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Manhã — 08:00 às 12:10">Manhã — 08:00 às 12:10</SelectItem>
+                  <SelectItem value="Tarde — 13:00 às 17:10">Tarde — 13:00 às 17:10</SelectItem>
+                  <SelectItem value="Noite — 18:00 às 22:10">Noite — 18:00 às 22:10</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

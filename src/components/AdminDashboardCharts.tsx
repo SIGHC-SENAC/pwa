@@ -3,12 +3,13 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CertificadoMeta } from "@/services/certificadoService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { Loader2, Users, FileCheck, FileX, Upload, ChevronDown } from "lucide-react";
+import {
+  Loader2, Users, FileCheck, FileX, Clock, Award, UserX,
+} from "lucide-react";
 
 interface Props {
   certificados: CertificadoMeta[];
@@ -19,16 +20,13 @@ interface AlunoDoc {
   id: string;
   nome: string;
   cursoNome?: string;
-  cursoId?: string;
 }
 
 const COLORS = {
   approved: "hsl(152, 60%, 40%)",
-  rejected: "hsl(0, 72%, 51%)",
-  pending: "hsl(33, 93%, 55%)",
-  noUpload: "hsl(215, 10%, 45%)",
-  primary: "hsl(210, 100%, 29%)",
-  secondary: "hsl(33, 93%, 55%)",
+  rejected:  "hsl(0, 72%, 51%)",
+  pending:   "hsl(33, 93%, 55%)",
+  primary:   "hsl(210, 100%, 29%)",
 };
 
 const PIE_COLORS = [COLORS.approved, COLORS.rejected, COLORS.pending];
@@ -36,205 +34,239 @@ const PIE_COLORS = [COLORS.approved, COLORS.rejected, COLORS.pending];
 const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
-  const [chartsOpen, setChartsOpen] = useState(false);
 
   useEffect(() => {
-    const fetchAlunos = async () => {
+    const fetch = async () => {
       try {
         const q = query(collection(db, "users"), where("role", "==", "aluno"));
         const snap = await getDocs(q);
         setAlunos(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlunoDoc)));
-      } catch (err) {
-        console.error("Erro ao buscar alunos:", err);
-      } finally {
-        setLoadingAlunos(false);
-      }
+      } catch {}
+      finally { setLoadingAlunos(false); }
     };
-    fetchAlunos();
+    fetch();
   }, []);
 
   const stats = useMemo(() => {
-    const aprovados = certificados.filter((c) => c.status === "aprovado").length;
+    const aprovados  = certificados.filter((c) => c.status === "aprovado").length;
     const rejeitados = certificados.filter((c) => c.status === "rejeitado").length;
-    const pendentes = certificados.filter((c) => c.status === "pendente").length;
-
+    const pendentes  = certificados.filter((c) => c.status === "pendente").length;
+    const horasTotal = certificados.reduce((s, c) => s + (c.horasAprovadas || 0), 0);
     const uidsComUpload = new Set(certificados.map((c) => c.uid));
-    const semUpload = alunos.filter((a) => !uidsComUpload.has(a.id));
+    const semUpload = alunos.filter((a) => !uidsComUpload.has(a.id)).length;
 
-    // Curso -> alunos
     const cursoMap = new Map<string, number>();
     alunos.forEach((a) => {
       const curso = a.cursoNome || "Sem curso";
       cursoMap.set(curso, (cursoMap.get(curso) || 0) + 1);
     });
     const cursoAlunos = Array.from(cursoMap.entries())
-      .map(([curso, total]) => ({ curso: curso.length > 20 ? curso.slice(0, 20) + "…" : curso, total }))
+      .map(([curso, total]) => ({ curso: curso.length > 22 ? curso.slice(0, 22) + "…" : curso, total }))
       .sort((a, b) => b.total - a.total);
 
-    return { aprovados, rejeitados, pendentes, semUpload: semUpload.length, cursoAlunos };
+    return { aprovados, rejeitados, pendentes, horasTotal, semUpload, cursoAlunos };
   }, [certificados, alunos]);
 
   const pieData = useMemo(() => [
-    { name: "Aprovados", value: stats.aprovados },
+    { name: "Aprovados",  value: stats.aprovados },
     { name: "Rejeitados", value: stats.rejeitados },
-    { name: "Pendentes", value: stats.pendentes },
+    { name: "Pendentes",  value: stats.pendentes },
   ], [stats]);
 
-  // Per-student summary data
   const alunoChartData = useMemo(() => {
-    const map = new Map<string, { nome: string; aprovados: number; rejeitados: number; pendentes: number }>();
+    const map = new Map<string, { nome: string; Aprovados: number; Rejeitados: number; Pendentes: number }>();
     certificados.forEach((c) => {
-      const existing = map.get(c.uid) || { nome: c.nomeAluno || "Sem nome", aprovados: 0, rejeitados: 0, pendentes: 0 };
-      if (c.status === "aprovado") existing.aprovados++;
-      else if (c.status === "rejeitado") existing.rejeitados++;
-      else existing.pendentes++;
-      map.set(c.uid, existing);
+      const e = map.get(c.uid) || { nome: c.nomeAluno || "—", Aprovados: 0, Rejeitados: 0, Pendentes: 0 };
+      if (c.status === "aprovado") e.Aprovados++;
+      else if (c.status === "rejeitado") e.Rejeitados++;
+      else e.Pendentes++;
+      map.set(c.uid, e);
     });
     return Array.from(map.values())
-      .map((a) => ({
-        nome: (a.nome || "Sem nome").length > 15 ? (a.nome || "Sem nome").slice(0, 15) + "…" : (a.nome || "Sem nome"),
-        Aprovados: a.aprovados,
-        Rejeitados: a.rejeitados,
-        Pendentes: a.pendentes,
-      }))
+      .map((a) => ({ ...a, nome: a.nome.length > 16 ? a.nome.slice(0, 16) + "…" : a.nome }))
       .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
   }, [certificados]);
+
   const isLoading = loading || loadingAlunos;
+
+  const tooltipStyle = {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "8px",
+    fontSize: "12px",
+  };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
+  const kpis = [
+    {
+      label: "Total de Alunos",
+      value: alunos.length,
+      icon: Users,
+      color: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      label: "Pendentes",
+      value: stats.pendentes,
+      icon: Clock,
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+    },
+    {
+      label: "Aprovados",
+      value: stats.aprovados,
+      icon: FileCheck,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+    },
+    {
+      label: "Rejeitados",
+      value: stats.rejeitados,
+      icon: FileX,
+      color: "text-destructive",
+      bg: "bg-destructive/10",
+    },
+    {
+      label: "Horas Aprovadas",
+      value: `${stats.horasTotal}h`,
+      icon: Award,
+      color: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      label: "Sem Envio",
+      value: stats.semUpload,
+      icon: UserX,
+      color: "text-muted-foreground",
+      bg: "bg-muted",
+    },
+  ];
+
   return (
-    <Collapsible open={chartsOpen} onOpenChange={setChartsOpen}>
-      <Card className="shadow-sm">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
-                📊 Dashboard — Gráficos
-              </CardTitle>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${chartsOpen ? "rotate-180" : ""}`} />
-            </div>
+    <div className="space-y-6">
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+        {kpis.map(({ label, value, icon: Icon, color, bg }) => (
+          <Card key={label} className="shadow-sm border">
+            <CardContent className="p-4 flex flex-col gap-3">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${bg}`}>
+                <Icon className={`h-4.5 w-4.5 ${color}`} style={{ height: "18px", width: "18px" }} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground leading-tight">{value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* Pie — status dos certificados */}
+        <Card className="shadow-sm border">
+          <CardHeader className="pb-2 pt-5 px-5">
+            <CardTitle className="text-sm font-semibold text-foreground">Status dos Certificados</CardTitle>
           </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Pie chart - Certificate status */}
-              <div className="rounded-lg border bg-background p-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">Status dos Certificados</p>
-                {certificados.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum certificado registrado</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={260}>
-                    <PieChart>
-                      <Pie
-                        data={pieData.filter(d => d.value > 0)}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={90}
-                        paddingAngle={3}
-                        dataKey="value"
-                        label={({ name, value, x, y, textAnchor }) => (
-                          <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="hsl(var(--foreground))" fontSize={12}>
-                            {`${name}: ${value}`}
-                          </text>
-                        )}
-                        labelLine={true}
-                      >
-                        {pieData.map((_, i) => (
-                          <Cell key={i} fill={PIE_COLORS[i]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                      />
-                      <Legend
-                        wrapperStyle={{ fontSize: "12px" }}
-                        formatter={(value) => <span className="text-foreground">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
+          <CardContent className="px-5 pb-5">
+            {certificados.length === 0 ? (
+              <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
+                Nenhum certificado registrado
               </div>
-
-              {/* Bar chart - Alunos por curso */}
-              <div className="rounded-lg border bg-background p-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">Alunos por Curso</p>
-                {stats.cursoAlunos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum dado disponível</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ left: 10, right: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis
-                        type="category"
-                        dataKey="curso"
-                        width={120}
-                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                        formatter={(value: number) => [`${value} alunos`, "Total"]}
-                      />
-                      <Bar dataKey="total" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={20} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            {/* Bar chart - Resumo por aluno */}
-            {alunoChartData.length > 0 && (
-              <div className="rounded-lg border bg-background p-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2">Resumo por Aluno</p>
-                <ResponsiveContainer width="100%" height={Math.max(260, alunoChartData.length * 40)}>
-                  <BarChart data={alunoChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
-                    <YAxis
-                      type="category"
-                      dataKey="nome"
-                      width={130}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "12px" }} />
-                    <Bar dataKey="Aprovados" stackId="a" fill={COLORS.approved} radius={[0, 0, 0, 0]} barSize={20} />
-                    <Bar dataKey="Rejeitados" stackId="a" fill={COLORS.rejected} radius={[0, 0, 0, 0]} barSize={20} />
-                    <Bar dataKey="Pendentes" stackId="a" fill={COLORS.pending} radius={[0, 4, 4, 0]} barSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={pieData.filter((d) => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={95}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend
+                    wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
+                    formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             )}
           </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+        </Card>
+
+        {/* Bar — alunos por curso */}
+        <Card className="shadow-sm border">
+          <CardHeader className="pb-2 pt-5 px-5">
+            <CardTitle className="text-sm font-semibold text-foreground">Alunos por Curso</CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            {stats.cursoAlunos.length === 0 ? (
+              <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
+                Nenhum dado disponível
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ left: 8, right: 16 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis
+                    type="category"
+                    dataKey="curso"
+                    width={130}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} alunos`, "Total"]} />
+                  <Bar dataKey="total" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bar — resumo por aluno */}
+      {alunoChartData.length > 0 && (
+        <Card className="shadow-sm border">
+          <CardHeader className="pb-2 pt-5 px-5">
+            <CardTitle className="text-sm font-semibold text-foreground">Resumo por Aluno</CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <ResponsiveContainer width="100%" height={Math.max(240, alunoChartData.length * 38)}>
+              <BarChart data={alunoChartData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="nome"
+                  width={130}
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => <span style={{ color: "hsl(var(--foreground))" }}>{v}</span>} />
+                <Bar dataKey="Aprovados"  stackId="a" fill={COLORS.approved} barSize={18} />
+                <Bar dataKey="Rejeitados" stackId="a" fill={COLORS.rejected}  barSize={18} />
+                <Bar dataKey="Pendentes"  stackId="a" fill={COLORS.pending}   radius={[0, 4, 4, 0]} barSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

@@ -66,6 +66,9 @@ const CertificadoDetailModal: React.FC<Props> = ({ cert, open, onClose }) => {
           <p className="text-xs text-muted-foreground mt-0.5">
             {formatFileSize(cert.tamanhoBytes)} · {formatDate(cert.createdAt)}
           </p>
+          {cert.categoriaNome && (
+            <p className="text-xs text-primary font-medium mt-1">{cert.categoriaNome}</p>
+          )}
         </div>
       </div>
 

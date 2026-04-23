@@ -1,6 +1,31 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { toast } from "sonner";
+import {
+  BookOpen,
+  Building2,
+  GraduationCap,
+  History,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Settings,
+  ShieldAlert,
+  Upload,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { auth } from "@/lib/firebase";
+import { findAtividadeById } from "@/lib/categoriasComplementares";
+import { Button } from "@/components/ui/button";
+import DashboardCards from "@/components/DashboardCards";
+import FloatingUploadButton from "@/components/FloatingUploadButton";
+import HistoricoCertificados from "@/components/HistoricoCertificados";
+import CardOrientacoes from "@/components/CardOrientacoes";
+import ProgressoHoras from "@/components/ProgressoHoras";
+import NotificationBell from "@/components/NotificationBell";
+import SettingsDialog from "@/components/SettingsDialog";
+import { fetchCursoById, Curso } from "@/services/cursoService";
 import {
   uploadCertificado,
   processarCertificado,
@@ -8,28 +33,43 @@ import {
   saveRejectedCertificado,
   CertificadoMeta,
 } from "@/services/certificadoService";
-import { fetchCursoById, Curso } from "@/services/cursoService";
-import AlunoHeader from "@/components/AlunoHeader";
-import DashboardCards from "@/components/DashboardCards";
-import FloatingUploadButton from "@/components/FloatingUploadButton";
-import HistoricoCertificados from "@/components/HistoricoCertificados";
-import CardOrientacoes from "@/components/CardOrientacoes";
-import CollapsibleSection from "@/components/CollapsibleSection";
-import ProgressoHoras from "@/components/ProgressoHoras";
-import { toast } from "sonner";
-import {
-  Loader2,
-  ShieldAlert,
-  History,
-  BookOpen,
-} from "lucide-react";
+
+const senacLogo = "/senac-logo.png";
+
+type Tab = "dashboard" | "historico" | "orientacoes";
+
+const navItems: { id: Tab; label: string; icon: React.ElementType; description: string }[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    description: "Progresso detalhado das suas horas",
+  },
+  {
+    id: "historico",
+    label: "Historico",
+    icon: History,
+    description: "Seus certificados enviados",
+  },
+  {
+    id: "orientacoes",
+    label: "Orientacoes",
+    icon: BookOpen,
+    description: "Como funciona o sistema",
+  },
+];
 
 const HorasComplementares: React.FC = () => {
   const { user, userData, loading: authLoading, isAluno } = useAuth();
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+
   const [file, setFile] = useState<File | null>(null);
   const [observacao, setObservacao] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
@@ -38,40 +78,40 @@ const HorasComplementares: React.FC = () => {
 
   const loadCertificados = useCallback(async () => {
     if (!user) return;
+
     setHistLoading(true);
     try {
       const data = await fetchCertificados(user.uid);
       setCertificados(data);
-    } catch (err) {
-      toast.error("Erro ao carregar histórico de certificados.");
-      console.error("Erro ao carregar histórico:", err);
+    } catch {
+      toast.error("Erro ao carregar historico de certificados.");
     } finally {
       setHistLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [authLoading, user, navigate]);
+    if (!authLoading && !user) navigate("/login");
+  }, [authLoading, navigate, user]);
 
   useEffect(() => {
-    if (user && isAluno) {
-      loadCertificados();
-    }
-  }, [user, isAluno, loadCertificados]);
+    if (user && isAluno) loadCertificados();
+  }, [isAluno, loadCertificados, user]);
 
   useEffect(() => {
-    if (userData?.cursoId) {
-      fetchCursoById(userData.cursoId)
-        .then(setCurso)
-        .catch((err) => console.error("Erro ao buscar curso:", err));
-    }
+    if (!userData?.cursoId) return;
+
+    fetchCursoById(userData.cursoId)
+      .then(setCurso)
+      .catch(() => {});
   }, [userData?.cursoId]);
 
   const handleUpload = async () => {
-    if (!file || !user || !userData) return;
+    if (!file || !user || !userData || !categoriaId) return;
+
+    const categoriaInfo = findAtividadeById(categoriaId);
+    const categoriaNome = categoriaInfo ? `${categoriaInfo.id} - ${categoriaInfo.descricao}` : null;
+
     setUploading(true);
     setProgress(0);
 
@@ -81,11 +121,9 @@ const HorasComplementares: React.FC = () => {
       task.on(
         "state_changed",
         (snapshot) => {
-          const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setProgress(Math.round(pct));
+          setProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
         },
-        (error) => {
-          console.error("Erro no upload:", error);
+        () => {
           toast.error("Erro ao enviar o arquivo. Tente novamente.");
           setUploading(false);
           setProgress(0);
@@ -94,65 +132,65 @@ const HorasComplementares: React.FC = () => {
           try {
             const token = await user.getIdToken();
 
-            const result = await processarCertificado(
+            await processarCertificado(
               user.uid,
               storagePath,
               file.name,
-              token
+              token,
+              categoriaId,
+              categoriaNome
             );
 
             toast.success("Certificado enviado e validado com sucesso!");
             setFile(null);
             setObservacao("");
+            setCategoriaId("");
             setProgress(0);
             loadCertificados();
 
-            // Notifica admins em background
             try {
               await fetch(`${import.meta.env.VITE_API_BASE_URL}/notificacoes/upload-certificado`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({
                   nomeAluno: user.displayName || userData.nome || "Aluno",
                   nomeArquivo: file.name,
                 }),
               });
-            } catch (notifErr) {
-              console.warn("Falha ao notificar admins:", notifErr);
-            }
+            } catch {}
           } catch (err: any) {
-            console.error("Erro na validação do certificado:", err);
             const motivo = err.message || "Erro ao validar o certificado";
             toast.error(motivo);
 
-            // Salva registro de rejeição no histórico do aluno
             try {
               await saveRejectedCertificado({
                 uid: user.uid,
                 nomeArquivo: file.name,
                 motivoRejeicao: motivo,
                 encontrados: err.encontrados,
+                categoriaId,
+                categoriaNome,
               });
               loadCertificados();
-            } catch (saveErr) {
-              console.warn("Falha ao salvar rejeição no histórico:", saveErr);
-            }
+            } catch {}
 
             setFile(null);
+            setCategoriaId("");
             setProgress(0);
           } finally {
             setUploading(false);
           }
         }
       );
-    } catch (err) {
-      console.error("Erro geral:", err);
+    } catch {
       toast.error("Erro inesperado. Tente novamente.");
       setUploading(false);
     }
   };
 
-  // Loading state
   if (authLoading || (user && !userData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -163,16 +201,17 @@ const HorasComplementares: React.FC = () => {
 
   if (!user) return null;
 
-  // Not aluno
   if (!isAluno) {
     if (userData?.role === "superAdmin") {
       navigate("/super-admin");
       return null;
     }
+
     if (userData?.role === "admin") {
       navigate("/admin");
       return null;
     }
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
@@ -180,107 +219,256 @@ const HorasComplementares: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold text-foreground">Acesso restrito</h1>
         <p className="text-center text-sm text-muted-foreground">
-          Esta página é exclusiva para alunos. Entre em contato com a
-          coordenação se acredita que isso é um erro.
+          Esta pagina e exclusiva para alunos.
         </p>
       </div>
     );
   }
 
-  const userName = user.displayName || userData?.nome || "Aluno";
+  const displayName = user.displayName || userData?.nome || "Aluno";
   const userEmail = user.email || userData?.email || "";
+  const initials = displayName
+    .split(" ")
+    .map((word: string) => word[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
-  const today = new Date().toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const activeItem = navItems.find((item) => item.id === activeTab)!;
+
+  const horasAprovadas = certificados.reduce(
+    (total, certificado) =>
+      total + (certificado.status === "aprovado" && certificado.horasAprovadas ? certificado.horasAprovadas : 0),
+    0
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <AlunoHeader userName={userName} userEmail={userEmail} />
-
-      <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Welcome */}
-        <div className="animate-fade-in rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 sm:p-7 text-primary-foreground shadow-md">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">
-                Olá, {userName.split(" ")[0]}! 👋
-              </h1>
-              <p className="mt-1 text-sm text-primary-foreground/80">
-                Acompanhe seus certificados e horas complementares
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <header className="sticky top-0 z-40 shrink-0 border-b bg-card shadow-sm">
+        <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <img src={senacLogo} alt="Senac Pernambuco" className="h-9 w-auto object-contain sm:h-10" />
+            <div className="hidden h-8 w-px bg-border sm:block" />
+            <div className="hidden min-w-0 sm:block">
+              <p className="flex items-center gap-1.5 text-sm font-bold leading-tight text-primary">
+                <GraduationCap className="h-4 w-4" />
+                Horas Complementares
+              </p>
+              <p className="text-[11px] leading-tight text-muted-foreground">
+                Acompanhe seus certificados
               </p>
             </div>
-            <p className="text-xs sm:text-sm text-primary-foreground/60 capitalize">
-              {today}
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <NotificationBell userId={user.uid} />
+            <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-1.5 shadow-sm">
+              <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="hidden text-sm font-medium text-foreground sm:inline">
+                Faculdade Senac PE
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r bg-card md:flex">
+          <div className="px-4 pb-2 pt-5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+              Menu
             </p>
           </div>
+
+          <nav className="flex flex-1 flex-col gap-0.5 px-2">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`
+                    group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium
+                    transition-all duration-150
+                    ${isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                    }
+                  `}
+                >
+                  <span
+                    className={`
+                      flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors
+                      ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"}
+                    `}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="truncate">{label}</span>
+                  {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="mx-3 my-3 h-px bg-border" />
+
+          <div className="px-3 pb-4">
+            <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-foreground">{displayName}</p>
+                <p className="truncate text-[10px] text-muted-foreground">{userEmail}</p>
+              </div>
+            </div>
+
+            <div className="mt-2 flex gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 flex-1 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Config.
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 flex-1 gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={async () => {
+                  await signOut(auth);
+                  navigate("/login");
+                }}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </aside>
+
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-card shadow-[0_-1px_8px_rgba(0,0,0,0.08)] md:hidden">
+          <div className="flex">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className="flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors"
+                >
+                  <span
+                    className={`
+                      flex h-6 w-6 items-center justify-center rounded-md transition-colors
+                      ${isActive ? "text-primary" : "text-muted-foreground"}
+                    `}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                    {label}
+                  </span>
+                  {isActive && <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Summary cards */}
-        <DashboardCards certificados={certificados} loading={histLoading} />
-
-        {/* Progress bar */}
-        <ProgressoHoras
-          horasAprovadas={certificados.reduce(
-            (sum, c) => sum + (c.status === "aprovado" && c.horasAprovadas ? c.horasAprovadas : 0),
-            0
-          )}
-          nomeCurso={curso?.nome}
-          cargaHorariaTotal={curso?.cargaHorariaComplementar}
-          loading={histLoading}
-        />
-
-        {/* Main content */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left column */}
-          <div className="lg:col-span-2 space-y-6">
-            <CollapsibleSection
-              icon={
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
-                  <History className="h-4 w-4 text-secondary" />
-                </div>
-              }
-              title="Histórico de envios"
-              subtitle="Acompanhe o status dos seus certificados"
-            >
-              <HistoricoCertificados
-                certificados={certificados}
-                loading={histLoading}
-              />
-            </CollapsibleSection>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <CollapsibleSection
-              icon={
+        <main className="min-w-0 flex-1 overflow-y-auto bg-background">
+          <div className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-5 py-3.5 backdrop-blur-sm sm:px-8">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                  <BookOpen className="h-4 w-4 text-primary" />
+                  {(() => {
+                    const Icon = activeItem.icon;
+                    return <Icon className="h-4 w-4 text-primary" />;
+                  })()}
                 </div>
-              }
-              title="Orientações"
-              defaultOpen={false}
-            >
-              <CardOrientacoes />
-            </CollapsibleSection>
-          </div>
-        </div>
+                <div>
+                  <h1 className="text-sm font-bold leading-tight text-foreground">{activeItem.label}</h1>
+                  <p className="text-xs text-muted-foreground">{activeItem.description}</p>
+                </div>
+              </div>
 
-        {/* Floating upload button */}
-        <FloatingUploadButton
-          file={file}
-          onFileSelect={setFile}
-          onFileRemove={() => setFile(null)}
-          observacao={observacao}
-          onObservacaoChange={setObservacao}
-          uploading={uploading}
-          progress={progress}
-          onUpload={handleUpload}
-        />
-      </main>
+              <Button
+                onClick={() => setUploadOpen(true)}
+                size="sm"
+                className="shrink-0 gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Enviar Certificado</span>
+                <span className="sm:hidden">Enviar</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-6 px-4 py-5 pb-24 sm:px-8 sm:py-6 md:pb-8">
+            {activeTab === "dashboard" && (
+              <>
+                <div className="rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 text-primary-foreground shadow-md sm:p-7">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold sm:text-2xl">
+                        Ola, {displayName.split(" ")[0]}!
+                      </h2>
+                      <p className="mt-1 text-sm text-primary-foreground/80">
+                        Veja seu dashboard com o progresso das horas complementares
+                      </p>
+                    </div>
+                    <p className="text-xs capitalize text-primary-foreground/60 sm:text-sm">
+                      {new Date().toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                <DashboardCards certificados={certificados} loading={histLoading} />
+
+                <ProgressoHoras
+                  certificados={certificados}
+                  horasAprovadas={horasAprovadas}
+                  nomeCurso={curso?.nome}
+                  loading={histLoading}
+                />
+              </>
+            )}
+
+            {activeTab === "historico" && (
+              <HistoricoCertificados certificados={certificados} loading={histLoading} />
+            )}
+
+            {activeTab === "orientacoes" && <CardOrientacoes />}
+          </div>
+        </main>
+      </div>
+
+      <FloatingUploadButton
+        file={file}
+        onFileSelect={setFile}
+        onFileRemove={() => setFile(null)}
+        observacao={observacao}
+        onObservacaoChange={setObservacao}
+        categoriaId={categoriaId}
+        onCategoriaChange={setCategoriaId}
+        uploading={uploading}
+        progress={progress}
+        onUpload={handleUpload}
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+      />
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };

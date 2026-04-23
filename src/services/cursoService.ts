@@ -18,7 +18,6 @@ export interface Curso {
   nome: string;
   codigo: string;
   turno: "manhã" | "tarde" | "noite";
-  cargaHorariaComplementar: number;
   criadoEm?: string;
 }
 
