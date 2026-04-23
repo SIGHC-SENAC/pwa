@@ -2,22 +2,46 @@ import { db } from "../config/firebase.js";
 
 const COLLECTION = "turmas";
 
+async function resolverCursoPermitido(req) {
+  if (req.user?.role === "superAdmin") {
+    return req.query.cursoId || null;
+  }
+
+  const userDoc = await db.collection("users").doc(req.user.uid).get();
+  if (!userDoc.exists) {
+    const error = new Error("Usuario nao encontrado.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const cursoId = userDoc.data().cursoId;
+  if (!cursoId) {
+    const error = new Error("Admin sem curso vinculado.");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return cursoId;
+}
+
 // GET /turmas?cursoId=xxx
 export async function listarTurmas(req, res) {
   try {
-    const { cursoId } = req.query;
+    const cursoId = await resolverCursoPermitido(req);
     let query;
+
     if (cursoId) {
       query = db.collection(COLLECTION).where("cursoId", "==", cursoId);
     } else {
       query = db.collection(COLLECTION).orderBy("criadoEm", "desc");
     }
+
     const snapshot = await query.get();
     const turmas = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return res.json(turmas);
   } catch (error) {
     console.error("Erro ao listar turmas:", error);
-    return res.status(500).json({ message: "Erro ao listar turmas." });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Erro ao listar turmas." });
   }
 }
 
@@ -26,13 +50,22 @@ export async function buscarTurma(req, res) {
   try {
     const { id } = req.params;
     const doc = await db.collection(COLLECTION).doc(id).get();
+
     if (!doc.exists) {
-      return res.status(404).json({ message: "Turma não encontrada." });
+      return res.status(404).json({ message: "Turma nao encontrada." });
     }
+
+    if (req.user?.role === "admin") {
+      const cursoIdPermitido = await resolverCursoPermitido(req);
+      if (doc.data().cursoId !== cursoIdPermitido) {
+        return res.status(403).json({ message: "Sem permissao para acessar esta turma." });
+      }
+    }
+
     return res.json({ id: doc.id, ...doc.data() });
   } catch (error) {
     console.error("Erro ao buscar turma:", error);
-    return res.status(500).json({ message: "Erro ao buscar turma." });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Erro ao buscar turma." });
   }
 }
 
@@ -41,13 +74,12 @@ export async function criarTurma(req, res) {
   try {
     const { nome, cursoId, horario, periodoInicio, periodoFinal } = req.body;
     if (!nome || !cursoId || !horario || !periodoInicio || !periodoFinal) {
-      return res.status(400).json({ message: "Campos nome, cursoId, horario, periodoInicio e periodoFinal são obrigatórios." });
+      return res.status(400).json({ message: "Campos nome, cursoId, horario, periodoInicio e periodoFinal sao obrigatorios." });
     }
 
-    // Verifica se o curso existe
     const cursoDoc = await db.collection("cursos").doc(cursoId).get();
     if (!cursoDoc.exists) {
-      return res.status(404).json({ message: "Curso não encontrado." });
+      return res.status(404).json({ message: "Curso nao encontrado." });
     }
 
     const cursoData = cursoDoc.data();
@@ -88,7 +120,7 @@ export async function atualizarTurma(req, res) {
     const docRef = db.collection(COLLECTION).doc(id);
     const doc = await docRef.get();
     if (!doc.exists) {
-      return res.status(404).json({ message: "Turma não encontrada." });
+      return res.status(404).json({ message: "Turma nao encontrada." });
     }
 
     const updateData = {};
@@ -100,7 +132,7 @@ export async function atualizarTurma(req, res) {
     if (cursoId && cursoId !== doc.data().cursoId) {
       const cursoDoc = await db.collection("cursos").doc(cursoId).get();
       if (!cursoDoc.exists) {
-        return res.status(404).json({ message: "Curso não encontrado." });
+        return res.status(404).json({ message: "Curso nao encontrado." });
       }
       updateData.cursoId = cursoId;
       updateData.cursoNome = cursoDoc.data().nome;
@@ -124,11 +156,11 @@ export async function deletarTurma(req, res) {
     const docRef = db.collection(COLLECTION).doc(id);
     const doc = await docRef.get();
     if (!doc.exists) {
-      return res.status(404).json({ message: "Turma não encontrada." });
+      return res.status(404).json({ message: "Turma nao encontrada." });
     }
 
     await docRef.delete();
-    return res.json({ message: "Turma excluída com sucesso." });
+    return res.json({ message: "Turma excluida com sucesso." });
   } catch (error) {
     console.error("Erro ao deletar turma:", error);
     return res.status(500).json({ message: "Erro ao deletar turma." });

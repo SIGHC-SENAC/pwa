@@ -11,9 +11,18 @@ import {
 } from "@/services/adminService";
 import PdfViewerModal from "@/components/PdfViewerModal";
 import AdminDashboardCharts from "@/components/AdminDashboardCharts";
+import AdminAlunosPorTurma from "@/components/AdminAlunosPorTurma";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -41,22 +50,23 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  Settings,
-  Building2,
+  Menu,
+  User,
   LayoutDashboard,
   ClipboardList,
+  GraduationCap,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import NotificationBell from "@/components/NotificationBell";
-import SettingsDialog from "@/components/SettingsDialog";
 
 const senacLogo = "/senac-logo.png";
 
-type Section = "dashboard" | "certificados";
+type Section = "dashboard" | "certificados" | "alunos";
 
 const navItems: { id: Section; label: string; icon: React.ElementType; description: string }[] = [
   { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, description: "Visão geral e gráficos" },
   { id: "certificados", label: "Certificados", icon: ClipboardList,   description: "Análise de horas complementares" },
+  { id: "alunos",       label: "Alunos",       icon: GraduationCap,   description: "Alunos do curso separados por turma" },
 ];
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -85,7 +95,7 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState<CertificadoMeta | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -192,6 +202,56 @@ const Admin: React.FC = () => {
   const displayName = userData?.nome || user.displayName || "Admin";
   const initials = displayName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
   const activeItem = navItems.find((n) => n.id === activeSection)!;
+  const renderSidebarContent = (isMobileSidebar = false) => (
+    <>
+      <div className="px-4 pt-5 pb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Menu</p>
+      </div>
+
+      <nav className="flex flex-col gap-0.5 px-2 flex-1">
+        {navItems.map(({ id, label, icon: Icon }) => {
+          const isActive = activeSection === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setActiveSection(id);
+                if (isMobileSidebar) setMobileMenuOpen(false);
+              }}
+              className={`
+                group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
+                transition-all duration-150 w-full text-left
+                ${isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/70 hover:bg-muted hover:text-foreground"}
+              `}
+            >
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="truncate">{label}</span>
+              {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="mx-3 my-3 h-px bg-border" />
+
+      <div className="px-3 pb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+          onClick={async () => {
+            if (isMobileSidebar) setMobileMenuOpen(false);
+            await signOut(auth);
+            navigate("/login");
+          }}
+        >
+          <LogOut className="h-3.5 w-3.5" />Sair
+        </Button>
+      </div>
+    </>
+  );
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -200,6 +260,23 @@ const Admin: React.FC = () => {
       <header className="sticky top-0 z-40 border-b bg-card shadow-sm shrink-0">
         <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex items-center gap-3 min-w-0">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden shrink-0">
+                  <Menu className="h-4 w-4" />
+                  <span className="sr-only">Abrir menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0 sm:max-w-none">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Menu administrativo</SheetTitle>
+                  <SheetDescription>Navegue entre dashboard e certificados.</SheetDescription>
+                </SheetHeader>
+                <div className="flex h-full flex-col bg-card">
+                  {renderSidebarContent(true)}
+                </div>
+              </SheetContent>
+            </Sheet>
             <img src={senacLogo} alt="Senac Pernambuco" className="h-9 sm:h-10 w-auto object-contain" />
             <div className="hidden sm:block h-8 w-px bg-border" />
             <div className="hidden sm:block min-w-0">
@@ -215,8 +292,14 @@ const Admin: React.FC = () => {
             <NotificationBell userId={user?.uid} />
             {/* Unidade — display estático */}
             <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-1.5 shadow-sm">
-              <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="hidden sm:inline text-sm font-medium text-foreground">Faculdade Senac PE</span>
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {initials}
+              </div>
+              <div className="hidden min-w-0 sm:block">
+                <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+              </div>
+              <User className="h-3.5 w-3.5 shrink-0 text-primary sm:hidden" />
             </div>
           </div>
         </div>
@@ -228,71 +311,8 @@ const Admin: React.FC = () => {
 
         {/* ── Sidebar (desktop) ── */}
         <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-card overflow-y-auto">
-          <div className="px-4 pt-5 pb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Menu</p>
-          </div>
-
-          <nav className="flex flex-col gap-0.5 px-2 flex-1">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeSection === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveSection(id)}
-                  className={`
-                    group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
-                    transition-all duration-150 w-full text-left
-                    ${isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/70 hover:bg-muted hover:text-foreground"}
-                  `}
-                >
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"}`}>
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="truncate">{label}</span>
-                  {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="mx-3 my-3 h-px bg-border" />
-
-          {/* User footer */}
-          <div className="px-3 pb-4">
-            <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                {initials}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
-              </div>
-            </div>
-            <div className="mt-2 flex gap-1.5">
-              <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5" onClick={() => setSettingsOpen(true)}>
-                <Settings className="h-3.5 w-3.5" />Config.
-              </Button>
-              <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5" onClick={async () => { await signOut(auth); navigate("/login"); }}>
-                <LogOut className="h-3.5 w-3.5" />Sair
-              </Button>
-            </div>
-          </div>
+          {renderSidebarContent()}
         </aside>
-
-        {/* ── Mobile nav (bottom bar) ── */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-card shadow-[0_-1px_8px_rgba(0,0,0,0.08)]">
-          <div className="flex">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeSection === id;
-              return (
-                <button key={id} onClick={() => setActiveSection(id)} className="flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors">
-                  <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* ── Main content ── */}
         <main className="flex-1 min-w-0 overflow-y-auto bg-background">
@@ -309,11 +329,14 @@ const Admin: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-4 py-5 sm:px-8 sm:py-6 pb-24 md:pb-8 space-y-4 sm:space-y-6">
+          <div className="px-4 py-5 pb-8 sm:px-8 sm:py-6 space-y-4 sm:space-y-6">
 
             {/* ── Dashboard ── */}
             {activeSection === "dashboard" && (
               <AdminDashboardCharts certificados={certificados} loading={loading} />
+            )}
+            {activeSection === "alunos" && (
+              <AdminAlunosPorTurma cursoId={userData?.cursoId} certificados={certificados} />
             )}
 
             {/* ── Certificados ── */}
@@ -480,7 +503,6 @@ const Admin: React.FC = () => {
         onAprovar={handleAprovar}
         onRejeitar={handleRejeitar}
       />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };

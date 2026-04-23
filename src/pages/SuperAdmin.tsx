@@ -11,10 +11,9 @@ import {
   BookOpen,
   Users,
   Shield,
-  Settings,
   Crown,
   GraduationCap,
-  Building2,
+  User,
   LayoutDashboard,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
@@ -23,7 +22,6 @@ import AdminTurmas from "@/components/AdminTurmas";
 import AdminAddAluno from "@/components/AdminAddAluno";
 import SuperAdminAdmins from "@/components/SuperAdminAdmins";
 import SuperAdminDashboard from "@/components/SuperAdminDashboard";
-import SettingsDialog from "@/components/SettingsDialog";
 
 const senacLogo = "/senac-logo.png";
 
@@ -41,7 +39,6 @@ const SuperAdmin: React.FC = () => {
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isSuperAdmin = userData?.role === "superAdmin";
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
@@ -102,10 +99,14 @@ const SuperAdmin: React.FC = () => {
 
             {/* Unidade — display estático */}
             <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-1.5 shadow-sm">
-              <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="hidden sm:inline text-sm font-medium text-foreground">
-                Faculdade Senac PE
-              </span>
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {initials}
+              </div>
+              <div className="hidden min-w-0 sm:block">
+                <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+              </div>
+              <User className="h-3.5 w-3.5 shrink-0 text-primary sm:hidden" />
             </div>
           </div>
         </div>
@@ -167,38 +168,16 @@ const SuperAdmin: React.FC = () => {
           {/* Divider */}
           <div className="mx-3 my-3 h-px bg-border" />
 
-          {/* User footer */}
           <div className="px-3 pb-4">
-            <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                {initials}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
-              </div>
-            </div>
-
-            <div className="mt-2 flex gap-1.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1 h-8 text-xs text-muted-foreground hover:text-foreground gap-1.5"
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings className="h-3.5 w-3.5" />
-                Config.
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
-                onClick={async () => { await signOut(auth); navigate("/login"); }}
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Sair
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+              onClick={async () => { await signOut(auth); navigate("/login"); }}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </Button>
           </div>
         </aside>
 
@@ -255,8 +234,6 @@ const SuperAdmin: React.FC = () => {
           </div>
         </main>
       </div>
-
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };

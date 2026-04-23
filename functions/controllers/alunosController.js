@@ -1,10 +1,32 @@
 import { db, auth_firebase } from "../config/firebase.js";
 import { transporter } from "../config/nodemailer.js";
 
+async function resolverCursoPermitido(req) {
+  if (req.user?.role === "superAdmin") {
+    return req.query.cursoId || null;
+  }
+
+  const userDoc = await db.collection("users").doc(req.user.uid).get();
+  if (!userDoc.exists) {
+    const error = new Error("Usuário não encontrado.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const cursoId = userDoc.data().cursoId;
+  if (!cursoId) {
+    const error = new Error("Admin sem curso vinculado.");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return cursoId;
+}
+
 // GET /alunos
 export async function listarAlunos(req, res) {
   try {
-    const { cursoId } = req.query;
+    const cursoId = await resolverCursoPermitido(req);
     let query = db.collection("users").where("role", "==", "aluno");
     if (cursoId) {
       query = query.where("cursoId", "==", cursoId);
@@ -14,7 +36,7 @@ export async function listarAlunos(req, res) {
     return res.json(alunos);
   } catch (error) {
     console.error("Erro ao listar alunos:", error);
-    return res.status(500).json({ message: "Erro ao listar alunos." });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Erro ao listar alunos." });
   }
 }
 
