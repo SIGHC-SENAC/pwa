@@ -77,3 +77,16 @@ export async function rejeitarCertificado(
     updatedAt: serverTimestamp(),
   });
 }
+
+export async function atualizarCategoriaCertificado(
+  certId: string,
+  categoriaId: string | null,
+  categoriaNome: string | null
+): Promise<void> {
+  const docRef = doc(db, COLLECTION, certId);
+  await updateDoc(docRef, {
+    categoriaId,
+    categoriaNome,
+    updatedAt: serverTimestamp(),
+  });
+}

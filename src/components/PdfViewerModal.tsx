@@ -15,8 +15,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, CheckCircle2, XCircle, FileText, ExternalLink } from "lucide-react";
-import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
+import { CertificadoMeta, getDownloadURLFromPath } from "@/services/certificadoService";
+import { findAtividadeById, GRUPOS_ATIVIDADES } from "@/lib/categoriasComplementares";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -26,6 +36,7 @@ interface PdfViewerModalProps {
   onClose: () => void;
   onAprovar: (certId: string, horas: number, obs: string) => Promise<void>;
   onRejeitar: (certId: string, motivo: string, obs: string) => Promise<void>;
+  onAtualizarCategoria: (certId: string, categoriaId: string | null, categoriaNome: string | null) => Promise<void>;
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -51,27 +62,77 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   onClose,
   onAprovar,
   onRejeitar,
+  onAtualizarCategoria,
 }) => {
   const [horas, setHoras] = useState<string>("");
-  const [obsAdmin, setObsAdmin] = useState("");
   const [motivo, setMotivo] = useState("");
   const [actionLoading, setActionLoading] = useState<"aprovar" | "rejeitar" | null>(null);
   const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState(false);
+  const [showPdfFallback, setShowPdfFallback] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
+  const [categoriaSaving, setCategoriaSaving] = useState(false);
   const isMobile = useIsMobile();
 
   React.useEffect(() => {
     if (cert) {
       setHoras(cert.horasAprovadas?.toString() || "");
-      setObsAdmin(cert.observacaoAdmin || "");
       setMotivo(cert.motivoRejeicao || "");
       setPdfLoading(true);
+      setPdfError(false);
+      setShowPdfFallback(false);
+      setPdfUrl(cert.downloadURL || "");
+      setCategoriaId(cert.categoriaId || "");
     }
   }, [cert]);
+
+  React.useEffect(() => {
+    if (!open || !cert) return;
+    if (cert.downloadURL) {
+      setPdfUrl(cert.downloadURL);
+      return;
+    }
+    if (!cert.storagePath) {
+      setPdfLoading(false);
+      setPdfError(true);
+      return;
+    }
+
+    let cancelled = false;
+    setPdfLoading(true);
+    getDownloadURLFromPath(cert.storagePath)
+      .then((url) => {
+        if (cancelled) return;
+        setPdfUrl(url);
+        setPdfError(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPdfLoading(false);
+        setPdfError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cert, open]);
+
+  React.useEffect(() => {
+    if (!open || !pdfUrl || !pdfLoading) return;
+
+    const timer = window.setTimeout(() => {
+      setShowPdfFallback(true);
+    }, 3500);
+
+    return () => window.clearTimeout(timer);
+  }, [open, pdfLoading, pdfUrl]);
 
   if (!cert) return null;
 
   const status = statusConfig[cert.status] || statusConfig.pendente;
   const isPendente = cert.status === "pendente";
+  const categoriaChanged = categoriaId !== (cert.categoriaId || "");
 
   const handleAprovar = async () => {
     const h = parseFloat(horas);
@@ -81,7 +142,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     }
     setActionLoading("aprovar");
     try {
-      await onAprovar(cert.id, h, obsAdmin);
+      await onAprovar(cert.id, h, "");
       toast.success("Certificado aprovado com sucesso!");
       onClose();
     } catch {
@@ -98,7 +159,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     }
     setActionLoading("rejeitar");
     try {
-      await onRejeitar(cert.id, motivo, obsAdmin);
+      await onRejeitar(cert.id, motivo, "");
       toast.success("Certificado rejeitado.");
       onClose();
     } catch {
@@ -108,23 +169,75 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     }
   };
 
+  const handleSalvarCategoria = async () => {
+    if (!categoriaChanged) return;
+
+    const categoria = categoriaId ? findAtividadeById(categoriaId) : undefined;
+    const categoriaNome = categoria ? `${categoria.id} - ${categoria.descricao}` : null;
+
+    setCategoriaSaving(true);
+    try {
+      await onAtualizarCategoria(cert.id, categoriaId || null, categoriaNome);
+      toast.success("Categoria atualizada com sucesso.");
+    } catch {
+      toast.error("Erro ao atualizar categoria.");
+    } finally {
+      setCategoriaSaving(false);
+    }
+  };
+
+  const openPdfButton = pdfUrl ? (
+    <Button variant="outline" size="sm" asChild className="bg-background/95">
+      <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+        Abrir documento em outra página
+      </a>
+    </Button>
+  ) : null;
+
   const pdfViewer = (
-    <div className="bg-muted relative min-h-[250px] sm:min-h-[300px] flex-1">
-      {pdfLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <div className="bg-muted relative h-full min-h-[250px] sm:min-h-[300px]">
+      {openPdfButton && (
+        <div className="absolute right-3 top-3 z-20">
+          {openPdfButton}
         </div>
       )}
-      {cert.downloadURL ? (
+      {pdfLoading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted z-10 px-4 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          {showPdfFallback && (
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                O documento está demorando para carregar.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      {pdfError ? (
+        <div className="flex h-full min-h-[250px] flex-col items-center justify-center gap-3 px-4 py-12 text-center text-muted-foreground sm:min-h-[300px]">
+          <FileText className="h-12 w-12" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Não foi possível carregar a pré-visualização</p>
+            <p className="mt-1 text-xs">Abra o documento em outra página para continuar a análise.</p>
+          </div>
+        </div>
+      ) : pdfUrl ? (
         <iframe
-          src={`${cert.downloadURL}#toolbar=1&navpanes=0`}
-          className="w-full h-full min-h-[250px] sm:min-h-[300px]"
+          src={`${pdfUrl}#toolbar=1&navpanes=0`}
+          className="h-full min-h-[250px] w-full sm:min-h-[300px]"
           title="Visualização do PDF"
-          onLoad={() => setPdfLoading(false)}
-          onError={() => setPdfLoading(false)}
+          onLoad={() => {
+            setPdfLoading(false);
+            setPdfError(false);
+          }}
+          onError={() => {
+            setPdfLoading(false);
+            setPdfError(true);
+          }}
         />
       ) : (
-        <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground py-12">
+        <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
           <FileText className="h-12 w-12" />
           <p className="text-sm">Não foi possível carregar o PDF</p>
         </div>
@@ -144,10 +257,40 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           <div className="break-words"><span className="text-muted-foreground">Aluno:</span> <span className="font-medium text-foreground">{cert.nomeAluno}</span></div>
           <div className="break-words"><span className="text-muted-foreground">E-mail:</span> <span className="font-medium text-foreground">{cert.emailAluno}</span></div>
           <div className="break-words"><span className="text-muted-foreground">Arquivo:</span> <span className="font-medium text-foreground">{cert.nomeArquivo}</span></div>
-          {cert.categoriaNome && (
-            <div className="break-words"><span className="text-muted-foreground">Categoria:</span> <span className="font-medium text-primary">{cert.categoriaNome}</span></div>
-          )}
-          <div><span className="text-muted-foreground">Tamanho:</span> <span className="font-medium text-foreground">{formatFileSize(cert.tamanhoBytes)}</span></div>
+          <div className="space-y-2">
+            <span className="text-muted-foreground">Categoria:</span>
+            <Select value={categoriaId || "sem-categoria"} onValueChange={(value) => setCategoriaId(value === "sem-categoria" ? "" : value)}>
+              <SelectTrigger className="min-h-10 bg-background">
+                <SelectValue placeholder="Selecionar categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sem-categoria">Sem categoria</SelectItem>
+                {GRUPOS_ATIVIDADES.map((grupo) => (
+                  <SelectGroup key={grupo.id}>
+                    <SelectLabel>{grupo.label}</SelectLabel>
+                    {grupo.atividades.map((atividade) => (
+                      <SelectItem key={atividade.id} value={atividade.id}>
+                        {atividade.id} - {atividade.descricao}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+            {categoriaChanged && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleSalvarCategoria}
+                disabled={categoriaSaving}
+                className="w-full"
+              >
+                {categoriaSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Salvar categoria
+              </Button>
+            )}
+          </div>
           <div><span className="text-muted-foreground">Envio:</span> <span className="font-medium text-foreground">{formatDate(cert.createdAt)}</span></div>
           {cert.observacaoAluno && (
             <div>
@@ -157,14 +300,6 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           )}
         </div>
 
-        {cert.downloadURL && (
-          <Button variant="outline" size="sm" asChild className="w-full">
-            <a href={cert.downloadURL} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              Abrir PDF em nova aba
-            </a>
-          </Button>
-        )}
       </div>
 
       <div className="h-px bg-border" />
@@ -183,18 +318,6 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             onChange={(e) => setHoras(e.target.value)}
             placeholder="Ex: 20"
             className="mt-1"
-            disabled={!isPendente || actionLoading !== null}
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-foreground">Observação do admin</label>
-          <Textarea
-            value={obsAdmin}
-            onChange={(e) => setObsAdmin(e.target.value)}
-            placeholder="Observação opcional..."
-            className="mt-1 resize-none"
-            rows={2}
             disabled={!isPendente || actionLoading !== null}
           />
         </div>
@@ -276,8 +399,8 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           <DialogTitle className="text-xl font-bold text-primary">Análise do Certificado</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-row overflow-hidden">
-          <div className="flex-1 min-h-0 bg-muted relative border-r">
+        <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
+          <div className="relative min-h-0 flex-1 border-r bg-muted">
             {pdfViewer}
           </div>
           <div className="w-[380px] shrink-0 overflow-y-auto">

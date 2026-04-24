@@ -8,6 +8,7 @@ import {
   fetchAllCertificados,
   aprovarCertificado,
   rejeitarCertificado,
+  atualizarCategoriaCertificado,
 } from "@/services/adminService";
 import PdfViewerModal from "@/components/PdfViewerModal";
 import AdminDashboardCharts from "@/components/AdminDashboardCharts";
@@ -64,7 +65,7 @@ const senacLogo = "/senac-logo.png";
 type Section = "dashboard" | "certificados" | "alunos";
 
 const navItems: { id: Section; label: string; icon: React.ElementType; description: string }[] = [
-  { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, description: "Visão geral e gráficos" },
+  { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, description: "Visão geral das horas complementares" },
   { id: "certificados", label: "Certificados", icon: ClipboardList,   description: "Análise de horas complementares" },
   { id: "alunos",       label: "Alunos",       icon: GraduationCap,   description: "Alunos do curso separados por turma" },
 ];
@@ -129,6 +130,14 @@ const Admin: React.FC = () => {
   const handleRejeitar = async (certId: string, motivo: string, obs: string) => {
     if (!user || !userData) return;
     await rejeitarCertificado(certId, user.uid, userData.nome || user.displayName || "Admin", motivo, obs);
+    await loadData();
+  };
+
+  const handleAtualizarCategoria = async (certId: string, categoriaId: string | null, categoriaNome: string | null) => {
+    await atualizarCategoriaCertificado(certId, categoriaId, categoriaNome);
+    setSelectedCert((current) =>
+      current?.id === certId ? { ...current, categoriaId, categoriaNome } : current
+    );
     await loadData();
   };
 
@@ -315,21 +324,28 @@ const Admin: React.FC = () => {
         </aside>
 
         {/* ── Main content ── */}
-        <main className="flex-1 min-w-0 overflow-y-auto bg-background">
+        <main className="flex-1 min-w-0 overflow-y-auto bg-[#F8FAFC]">
           {/* Sticky page heading */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 px-5 py-3.5 sm:px-8">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[#F8FAFC]/95 px-5 py-4 backdrop-blur-sm sm:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50">
                 {(() => { const Icon = activeItem.icon; return <Icon className="h-4 w-4 text-primary" />; })()}
               </div>
-              <div>
-                <h1 className="text-sm font-bold text-foreground leading-tight">{activeItem.label}</h1>
-                <p className="text-xs text-muted-foreground">{activeItem.description}</p>
+              <div className="min-w-0">
+                <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950">
+                  {activeSection === "dashboard" ? "Dashboard" : activeItem.label}
+                </h1>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  {activeSection === "dashboard" ? "Visão geral das horas complementares" : activeItem.description}
+                </p>
               </div>
-            </div>
+              </div>
+
+              </div>
           </div>
 
-          <div className="px-4 py-5 pb-8 sm:px-8 sm:py-6 space-y-4 sm:space-y-6">
+          <div className="space-y-5 px-4 py-5 pb-8 sm:px-8 sm:py-6">
 
             {/* ── Dashboard ── */}
             {activeSection === "dashboard" && (
@@ -502,6 +518,7 @@ const Admin: React.FC = () => {
         onClose={() => { setModalOpen(false); setSelectedCert(null); }}
         onAprovar={handleAprovar}
         onRejeitar={handleRejeitar}
+        onAtualizarCategoria={handleAtualizarCategoria}
       />
     </div>
   );

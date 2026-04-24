@@ -1,15 +1,21 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CertificadoMeta } from "@/services/certificadoService";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
-import {
-  Loader2, Users, FileCheck, FileX, Clock, Award, UserX,
-} from "lucide-react";
+import { Award, Clock, FileCheck, FileX, Loader2, UserX, Users } from "lucide-react";
 
 interface Props {
   certificados: CertificadoMeta[];
@@ -23,13 +29,31 @@ interface AlunoDoc {
 }
 
 const COLORS = {
-  approved: "hsl(152, 60%, 40%)",
-  rejected:  "hsl(0, 72%, 51%)",
-  pending:   "hsl(33, 93%, 55%)",
-  primary:   "hsl(210, 100%, 29%)",
+  blue: "#2563EB",
+  orange: "#F59E0B",
+  green: "#10B981",
+  red: "#EF4444",
+  violet: "#7C3AED",
+  slate: "#64748B",
+  border: "#E5E7EB",
+  grid: "#EEF2F7",
+  text: "#0F172A",
+  muted: "#64748B",
 };
 
-const PIE_COLORS = [COLORS.approved, COLORS.rejected, COLORS.pending];
+const statusColors = [COLORS.green, COLORS.red, COLORS.orange];
+
+const cardClass =
+  "rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]";
+
+const tooltipStyle = {
+  background: "#FFFFFF",
+  border: "1px solid #E5E7EB",
+  borderRadius: "12px",
+  boxShadow: "0 12px 32px rgba(15, 23, 42, 0.10)",
+  color: COLORS.text,
+  fontSize: "12px",
+};
 
 const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
@@ -41,16 +65,19 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
         const q = query(collection(db, "users"), where("role", "==", "aluno"));
         const snap = await getDocs(q);
         setAlunos(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlunoDoc)));
-      } catch {}
-      finally { setLoadingAlunos(false); }
+      } catch {
+        setAlunos([]);
+      } finally {
+        setLoadingAlunos(false);
+      }
     };
     fetch();
   }, []);
 
   const stats = useMemo(() => {
-    const aprovados  = certificados.filter((c) => c.status === "aprovado").length;
+    const aprovados = certificados.filter((c) => c.status === "aprovado").length;
     const rejeitados = certificados.filter((c) => c.status === "rejeitado").length;
-    const pendentes  = certificados.filter((c) => c.status === "pendente").length;
+    const pendentes = certificados.filter((c) => c.status === "pendente").length;
     const horasTotal = certificados.reduce((s, c) => s + (c.horasAprovadas || 0), 0);
     const uidsComUpload = new Set(certificados.map((c) => c.uid));
     const semUpload = alunos.filter((a) => !uidsComUpload.has(a.id)).length;
@@ -60,41 +87,50 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       const curso = a.cursoNome || "Sem curso";
       cursoMap.set(curso, (cursoMap.get(curso) || 0) + 1);
     });
+
     const cursoAlunos = Array.from(cursoMap.entries())
-      .map(([curso, total]) => ({ curso: curso.length > 22 ? curso.slice(0, 22) + "…" : curso, total }))
+      .map(([curso, total]) => ({ curso, total }))
       .sort((a, b) => b.total - a.total);
 
     return { aprovados, rejeitados, pendentes, horasTotal, semUpload, cursoAlunos };
   }, [certificados, alunos]);
 
-  const pieData = useMemo(() => [
-    { name: "Aprovados",  value: stats.aprovados },
-    { name: "Rejeitados", value: stats.rejeitados },
-    { name: "Pendentes",  value: stats.pendentes },
-  ], [stats]);
+  const pieData = useMemo(
+    () => [
+      { name: "Aprovados", value: stats.aprovados },
+      { name: "Rejeitados", value: stats.rejeitados },
+      { name: "Pendentes", value: stats.pendentes },
+    ],
+    [stats]
+  );
 
   const alunoChartData = useMemo(() => {
-    const map = new Map<string, { nome: string; Aprovados: number; Rejeitados: number; Pendentes: number }>();
+    const map = new Map<
+      string,
+      { nome: string; Aprovados: number; Rejeitados: number; Pendentes: number; total: number }
+    >();
+
     certificados.forEach((c) => {
-      const e = map.get(c.uid) || { nome: c.nomeAluno || "—", Aprovados: 0, Rejeitados: 0, Pendentes: 0 };
-      if (c.status === "aprovado") e.Aprovados++;
-      else if (c.status === "rejeitado") e.Rejeitados++;
-      else e.Pendentes++;
-      map.set(c.uid, e);
+      const entry = map.get(c.uid) || {
+        nome: c.nomeAluno || "Aluno sem nome",
+        Aprovados: 0,
+        Rejeitados: 0,
+        Pendentes: 0,
+        total: 0,
+      };
+
+      if (c.status === "aprovado") entry.Aprovados++;
+      else if (c.status === "rejeitado") entry.Rejeitados++;
+      else entry.Pendentes++;
+
+      entry.total++;
+      map.set(c.uid, entry);
     });
-    return Array.from(map.values())
-      .map((a) => ({ ...a, nome: a.nome.length > 16 ? a.nome.slice(0, 16) + "…" : a.nome }))
-      .sort((a, b) => (b.Aprovados + b.Rejeitados + b.Pendentes) - (a.Aprovados + a.Rejeitados + a.Pendentes));
+
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [certificados]);
 
   const isLoading = loading || loadingAlunos;
-
-  const tooltipStyle = {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    borderRadius: "8px",
-    fontSize: "12px",
-  };
 
   if (isLoading) {
     return (
@@ -108,164 +144,195 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
     {
       label: "Total de Alunos",
       value: alunos.length,
+      detail: "matriculados ativos",
       icon: Users,
-      color: "text-primary",
-      bg: "bg-primary/10",
+      iconClass: "bg-blue-50 text-blue-600",
     },
     {
       label: "Pendentes",
       value: stats.pendentes,
+      detail: "aguardando análise",
       icon: Clock,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      iconClass: "bg-amber-50 text-amber-600",
     },
     {
       label: "Aprovados",
       value: stats.aprovados,
+      detail: "certificados validados",
       icon: FileCheck,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      iconClass: "bg-emerald-50 text-emerald-600",
     },
     {
       label: "Rejeitados",
       value: stats.rejeitados,
+      detail: "com pendências",
       icon: FileX,
-      color: "text-destructive",
-      bg: "bg-destructive/10",
+      iconClass: "bg-red-50 text-red-600",
     },
     {
       label: "Horas Aprovadas",
       value: `${stats.horasTotal}h`,
+      detail: "carga horária aceita",
       icon: Award,
-      color: "text-primary",
-      bg: "bg-primary/10",
+      iconClass: "bg-violet-50 text-violet-600",
     },
     {
       label: "Sem Envio",
       value: stats.semUpload,
+      detail: "sem certificados",
       icon: UserX,
-      color: "text-muted-foreground",
-      bg: "bg-muted",
+      iconClass: "bg-slate-100 text-slate-600",
     },
   ];
 
-  return (
-    <div className="space-y-6">
+  const courseHeight = Math.max(250, Math.min(360, stats.cursoAlunos.length * 46 + 90));
+  const alunoHeight = Math.max(260, Math.min(520, alunoChartData.length * 44 + 92));
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-        {kpis.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="shadow-sm border">
-            <CardContent className="p-4 flex flex-col gap-3">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${bg}`}>
-                <Icon className={`h-4.5 w-4.5 ${color}`} style={{ height: "18px", width: "18px" }} />
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        {kpis.map(({ label, value, detail, icon: Icon, iconClass }) => (
+          <div
+            key={label}
+            className={`${cardClass} p-4 transition duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(15,23,42,0.07)]`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-slate-500">{label}</p>
+                <p className="mt-2 text-2xl font-semibold leading-none tracking-tight text-slate-950">{value}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground leading-tight">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
+                <Icon className="h-4 w-4" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <p className="mt-3 truncate text-xs text-slate-400">{detail}</p>
+          </div>
         ))}
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <section className={`${cardClass} p-5 sm:p-6`}>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-slate-950">Status dos Certificados</h2>
+            <p className="mt-1 text-sm text-slate-500">Distribuição dos envios por situação.</p>
+          </div>
+          {certificados.length === 0 ? (
+            <div className="flex h-[280px] items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-500">
+              Nenhum certificado registrado
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={292}>
+              <PieChart margin={{ top: 4, right: 8, bottom: 14, left: 8 }}>
+                <Pie
+                  data={pieData.filter((d) => d.value > 0)}
+                  cx="50%"
+                  cy="45%"
+                  dataKey="value"
+                  innerRadius={70}
+                  outerRadius={104}
+                  paddingAngle={4}
+                  stroke="#FFFFFF"
+                  strokeWidth={4}
+                >
+                  {pieData.map((_, index) => (
+                    <Cell key={index} fill={statusColors[index]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend
+                  align="center"
+                  iconSize={9}
+                  layout="horizontal"
+                  verticalAlign="bottom"
+                  wrapperStyle={{ fontSize: "12px", color: COLORS.muted }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </section>
 
-        {/* Pie — status dos certificados */}
-        <Card className="shadow-sm border">
-          <CardHeader className="pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-semibold text-foreground">Status dos Certificados</CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            {certificados.length === 0 ? (
-              <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
-                Nenhum certificado registrado
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={pieData.filter((d) => d.value > 0)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={95}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend
-                    wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-                    formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Bar — alunos por curso */}
-        <Card className="shadow-sm border">
-          <CardHeader className="pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-semibold text-foreground">Alunos por Curso</CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            {stats.cursoAlunos.length === 0 ? (
-              <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
-                Nenhum dado disponível
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ left: 8, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis
-                    type="category"
-                    dataKey="curso"
-                    width={130}
-                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} alunos`, "Total"]} />
-                  <Bar dataKey="total" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={18} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+        <section className={`${cardClass} p-5 sm:p-6`}>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-slate-950">Alunos por Curso</h2>
+            <p className="mt-1 text-sm text-slate-500">Volume de estudantes cadastrados por curso.</p>
+          </div>
+          {stats.cursoAlunos.length === 0 ? (
+            <div className="flex h-[280px] items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-500">
+              Nenhum dado disponível
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={courseHeight}>
+              <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ top: 12, right: 24, bottom: 4, left: 18 }}>
+                <CartesianGrid horizontal={true} vertical={false} stroke={COLORS.grid} />
+                <XAxis
+                  type="number"
+                  allowDecimals={false}
+                  axisLine={{ stroke: COLORS.border }}
+                  tickLine={false}
+                  tick={{ fill: COLORS.muted, fontSize: 12 }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="curso"
+                  width={150}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: COLORS.muted, fontSize: 12 }}
+                />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value} alunos`, "Total"]} />
+                <Bar dataKey="total" fill={COLORS.blue} radius={[0, 8, 8, 0]} barSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </section>
       </div>
 
-      {/* Bar — resumo por aluno */}
-      {alunoChartData.length > 0 && (
-        <Card className="shadow-sm border">
-          <CardHeader className="pb-2 pt-5 px-5">
-            <CardTitle className="text-sm font-semibold text-foreground">Resumo por Aluno</CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <ResponsiveContainer width="100%" height={Math.max(240, alunoChartData.length * 38)}>
-              <BarChart data={alunoChartData} layout="vertical" margin={{ left: 8, right: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+      <section className={`${cardClass} p-5 sm:p-6`}>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-950">Resumo por Aluno</h2>
+            <p className="mt-1 text-sm text-slate-500">Comparativo de certificados aprovados, pendentes e rejeitados.</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Aprovados</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" />Pendentes</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" />Rejeitados</span>
+          </div>
+        </div>
+
+        {alunoChartData.length === 0 ? (
+          <div className="flex h-[240px] items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-500">
+            Nenhum envio por aluno para exibir
+          </div>
+        ) : (
+          <div className="overflow-hidden">
+            <ResponsiveContainer width="100%" height={alunoHeight}>
+              <BarChart data={alunoChartData} layout="vertical" margin={{ top: 12, right: 24, bottom: 4, left: 36 }}>
+                <CartesianGrid horizontal={true} vertical={false} stroke={COLORS.grid} />
+                <XAxis
+                  type="number"
+                  allowDecimals={false}
+                  axisLine={{ stroke: COLORS.border }}
+                  tickLine={false}
+                  tick={{ fill: COLORS.muted, fontSize: 12 }}
+                />
                 <YAxis
                   type="category"
                   dataKey="nome"
-                  width={130}
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  width={190}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: COLORS.text, fontSize: 12 }}
                 />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => <span style={{ color: "hsl(var(--foreground))" }}>{v}</span>} />
-                <Bar dataKey="Aprovados"  stackId="a" fill={COLORS.approved} barSize={18} />
-                <Bar dataKey="Rejeitados" stackId="a" fill={COLORS.rejected}  barSize={18} />
-                <Bar dataKey="Pendentes"  stackId="a" fill={COLORS.pending}   radius={[0, 4, 4, 0]} barSize={18} />
+                <Bar dataKey="Aprovados" stackId="status" fill={COLORS.green} barSize={18} radius={[8, 0, 0, 8]} />
+                <Bar dataKey="Pendentes" stackId="status" fill={COLORS.orange} barSize={18} />
+                <Bar dataKey="Rejeitados" stackId="status" fill={COLORS.red} barSize={18} radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
+      </section>
     </div>
   );
 };
