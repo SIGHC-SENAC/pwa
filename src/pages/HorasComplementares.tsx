@@ -72,6 +72,8 @@ const HorasComplementares: React.FC = () => {
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [histLoading, setHistLoading] = useState(true);
   const [curso, setCurso] = useState<Curso | null>(null);
+  const [cursos, setCursos] = useState<Curso[]>([]);
+  const [cursoId, setCursoId] = useState("");
 
   const loadCertificados = useCallback(async () => {
     if (!user) return;
@@ -96,17 +98,31 @@ const HorasComplementares: React.FC = () => {
   }, [isAluno, loadCertificados, user]);
 
   useEffect(() => {
-    if (!userData?.cursoId) return;
+    const cursoIds = userData?.cursoIds?.length ? userData.cursoIds : userData?.cursoId ? [userData.cursoId] : [];
+    if (cursoIds.length === 0) return;
 
-    fetchCursoById(userData.cursoId)
-      .then(setCurso)
+    Promise.all(cursoIds.map((id) => fetchCursoById(id).catch(() => null)))
+      .then((data) => {
+        const cursosValidos = data.filter(Boolean) as Curso[];
+        setCursos(cursosValidos);
+        setCursoId((current) => current || cursosValidos[0]?.id || "");
+        setCurso(cursosValidos[0] || null);
+      })
       .catch(() => {});
-  }, [userData?.cursoId]);
+  }, [userData?.cursoId, userData?.cursoIds]);
+
+  useEffect(() => {
+    setCurso(cursos.find((item) => item.id === cursoId) || cursos[0] || null);
+  }, [cursoId, cursos]);
 
   const handleUpload = async () => {
-    if (!file || !user || !userData || !categoriaId) return;
+    if (!file || !user || !userData || !categoriaId || !cursoId) return;
 
-    const categoriaInfo = findAtividadeById(categoriaId);
+    const cursoSelecionado = cursos.find((item) => item.id === cursoId) || curso;
+    const gruposCurso = cursoSelecionado?.regrasAtividades || [];
+    const categoriaInfo = gruposCurso
+      .flatMap((grupo) => grupo.atividades)
+      .find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId);
     const categoriaNome = categoriaInfo ? `${categoriaInfo.id} - ${categoriaInfo.descricao}` : null;
 
     setUploading(true);
@@ -135,7 +151,13 @@ const HorasComplementares: React.FC = () => {
               file.name,
               token,
               categoriaId,
-              categoriaNome
+              categoriaNome,
+              cursoSelecionado?.id || cursoId,
+              cursoSelecionado?.nome || null,
+              cursoSelecionado?.codigo || null,
+              user.displayName || userData.nome || "Aluno",
+              user.email || userData.email || "",
+              observacao
             );
 
             toast.success("Certificado enviado e validado com sucesso!");
@@ -165,11 +187,16 @@ const HorasComplementares: React.FC = () => {
             try {
               await saveRejectedCertificado({
                 uid: user.uid,
+                nomeAluno: user.displayName || userData.nome || "Aluno",
+                emailAluno: user.email || userData.email || "",
                 nomeArquivo: file.name,
                 motivoRejeicao: motivo,
                 encontrados: err.encontrados,
                 categoriaId,
                 categoriaNome,
+                cursoId: cursoSelecionado?.id || cursoId,
+                cursoNome: cursoSelecionado?.nome || null,
+                cursoCodigo: cursoSelecionado?.codigo || null,
               });
               loadCertificados();
             } catch {}
@@ -232,8 +259,11 @@ const HorasComplementares: React.FC = () => {
     .toUpperCase();
 
   const activeItem = navItems.find((item) => item.id === activeTab)!;
+  const certificadosDoCurso = cursoId
+    ? certificados.filter((certificado) => !certificado.cursoId || certificado.cursoId === cursoId)
+    : certificados;
 
-  const horasAprovadas = certificados.reduce(
+  const horasAprovadas = certificadosDoCurso.reduce(
     (total, certificado) =>
       total + (certificado.status === "aprovado" && certificado.horasAprovadas ? certificado.horasAprovadas : 0),
     0
@@ -413,10 +443,10 @@ const HorasComplementares: React.FC = () => {
                   </div>
                 </div>
 
-                <DashboardCards certificados={certificados} loading={histLoading} />
+                <DashboardCards certificados={certificadosDoCurso} loading={histLoading} />
 
                 <ProgressoHoras
-                  certificados={certificados}
+                  certificados={certificadosDoCurso}
                   horasAprovadas={horasAprovadas}
                   nomeCurso={curso?.nome}
                   loading={histLoading}
@@ -435,6 +465,10 @@ const HorasComplementares: React.FC = () => {
 
       <FloatingUploadButton
         file={file}
+        cursos={cursos}
+        gruposAtividades={curso?.regrasAtividades}
+        cursoId={cursoId}
+        onCursoChange={setCursoId}
         onFileSelect={setFile}
         onFileRemove={() => setFile(null)}
         observacao={observacao}

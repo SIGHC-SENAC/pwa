@@ -12,8 +12,8 @@ import {
   BookOpen, Users, GraduationCap, Shield, Loader2, CalendarRange,
 } from "lucide-react";
 
-interface AdminDoc { id: string; nome: string; email: string; }
-interface AlunoDoc  { id: string; nome: string; cursoNome?: string; cursoId?: string; }
+interface AdminDoc { id: string; nome: string; email: string; cursos?: Array<{ nome: string; codigo?: string }>; cursoNome?: string; }
+interface AlunoDoc  { id: string; nome: string; cursoNome?: string; cursoId?: string; cursos?: Array<{ nome: string; codigo?: string }>; }
 
 const tooltipStyle = {
   background: "hsl(var(--card))",
@@ -52,8 +52,11 @@ const SuperAdminDashboard: React.FC = () => {
   const alunosPorCurso = useMemo(() => {
     const map = new Map<string, number>();
     alunos.forEach((a) => {
-      const nome = a.cursoNome || "Sem curso";
-      map.set(nome, (map.get(nome) || 0) + 1);
+      const cursosAluno = a.cursos?.length ? a.cursos : [{ nome: a.cursoNome || "Sem curso" }];
+      cursosAluno.forEach((cursoInfo) => {
+        const nome = cursoInfo.nome || cursoInfo.codigo || "Sem curso";
+        map.set(nome, (map.get(nome) || 0) + 1);
+      });
     });
     return Array.from(map.entries())
       .map(([curso, total]) => ({

@@ -20,12 +20,17 @@ import { Award, Clock, FileCheck, FileX, Loader2, UserX, Users } from "lucide-re
 interface Props {
   certificados: CertificadoMeta[];
   loading: boolean;
+  cursoIds?: string[];
 }
 
 interface AlunoDoc {
   id: string;
   nome: string;
+  email?: string;
+  cursoId?: string;
   cursoNome?: string;
+  cursoIds?: string[];
+  cursos?: Array<{ id: string; nome: string; codigo?: string }>;
 }
 
 const COLORS = {
@@ -55,7 +60,7 @@ const tooltipStyle = {
   fontSize: "12px",
 };
 
-const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
+const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds = [] }) => {
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
 
@@ -64,7 +69,14 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       try {
         const q = query(collection(db, "users"), where("role", "==", "aluno"));
         const snap = await getDocs(q);
-        setAlunos(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlunoDoc)));
+        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlunoDoc));
+        const filtrados = cursoIds.length
+          ? data.filter((aluno) => {
+              const ids = aluno.cursoIds?.length ? aluno.cursoIds : aluno.cursoId ? [aluno.cursoId] : [];
+              return ids.some((id) => cursoIds.includes(id));
+            })
+          : data;
+        setAlunos(filtrados);
       } catch {
         setAlunos([]);
       } finally {
@@ -72,7 +84,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
       }
     };
     fetch();
-  }, []);
+  }, [cursoIds]);
 
   const stats = useMemo(() => {
     const aprovados = certificados.filter((c) => c.status === "aprovado").length;
@@ -84,8 +96,11 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
 
     const cursoMap = new Map<string, number>();
     alunos.forEach((a) => {
-      const curso = a.cursoNome || "Sem curso";
-      cursoMap.set(curso, (cursoMap.get(curso) || 0) + 1);
+      const cursos = a.cursos?.length ? a.cursos : [{ id: a.cursoIds?.[0] || "", nome: a.cursoNome || "Sem curso" }];
+      cursos.forEach((cursoInfo) => {
+        const curso = cursoInfo.nome || cursoInfo.codigo || "Sem curso";
+        cursoMap.set(curso, (cursoMap.get(curso) || 0) + 1);
+      });
     });
 
     const cursoAlunos = Array.from(cursoMap.entries())
@@ -105,14 +120,17 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
   );
 
   const alunoChartData = useMemo(() => {
+    const alunosPorId = new Map(alunos.map((aluno) => [aluno.id, aluno]));
     const map = new Map<
       string,
       { nome: string; Aprovados: number; Rejeitados: number; Pendentes: number; total: number }
     >();
 
     certificados.forEach((c) => {
+      const aluno = alunosPorId.get(c.uid);
+      const nomeAluno = c.nomeAluno || aluno?.nome || c.emailAluno || aluno?.email || "Aluno sem cadastro";
       const entry = map.get(c.uid) || {
-        nome: c.nomeAluno || "Aluno sem nome",
+        nome: nomeAluno,
         Aprovados: 0,
         Rejeitados: 0,
         Pendentes: 0,
@@ -128,7 +146,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading }) => {
     });
 
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [certificados]);
+  }, [certificados, alunos]);
 
   const isLoading = loading || loadingAlunos;
 

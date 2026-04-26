@@ -1,5 +1,6 @@
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import type { GrupoAtividade } from "@/lib/categoriasComplementares";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -18,6 +19,8 @@ export interface Curso {
   nome: string;
   codigo: string;
   turno: "manhã" | "tarde" | "noite";
+  cargaHorariaComplementar: number;
+  regrasAtividades?: GrupoAtividade[];
   criadoEm?: string;
 }
 
@@ -31,7 +34,8 @@ export async function fetchCursoById(id: string): Promise<Curso> {
 export interface AlunoPayload {
   nome: string;
   email: string;
-  cursoId: string;
+  cursoId?: string;
+  cursoIds?: string[];
   turmaId?: string;
 }
 
@@ -84,6 +88,8 @@ export interface Aluno {
   cursoId: string;
   cursoCodigo?: string;
   cursoNome?: string;
+  cursoIds?: string[];
+  cursos?: Array<{ id: string; nome: string; codigo?: string; turno?: string }>;
   turmaId?: string;
   turmaNome?: string;
   createdAt?: number;

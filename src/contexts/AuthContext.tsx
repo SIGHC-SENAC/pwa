@@ -8,6 +8,10 @@ interface UserData {
   email: string;
   role: string;
   cursoId?: string;
+  cursoNome?: string;
+  cursoCodigo?: string;
+  cursoIds?: string[];
+  cursos?: Array<{ id: string; nome: string; codigo?: string; turno?: string }>;
   createdAt: number;
   createdBy: string;
 }

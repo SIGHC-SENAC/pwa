@@ -43,6 +43,7 @@ import {
   Trash2,
   BookOpen,
   Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   fetchCursos,
@@ -51,6 +52,9 @@ import {
   deleteCurso,
   Curso,
 } from "@/services/cursoService";
+import CourseRulesEditor from "@/components/CourseRulesEditor";
+
+const CARGA_HORARIA_COMPLEMENTAR_PADRAO = 100;
 
 const turnoLabel: Record<string, string> = {
   manhã: "Manhã",
@@ -69,7 +73,9 @@ const AdminCursos: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [rulesDialogOpen, setRulesDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Curso | null>(null);
+  const [rulesTarget, setRulesTarget] = useState<Curso | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Curso | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -112,6 +118,11 @@ const AdminCursos: React.FC = () => {
     setDialogOpen(true);
   };
 
+  const openRules = (curso: Curso) => {
+    setRulesTarget(curso);
+    setRulesDialogOpen(true);
+  };
+
   const handleSave = async () => {
     if (!nome.trim()) {
       toast.error("Preencha o nome do curso.");
@@ -120,11 +131,20 @@ const AdminCursos: React.FC = () => {
     setSaving(true);
     try {
       if (editing?.id) {
-        const payload = { nome: nome.trim().toUpperCase(), codigo: codigo.trim(), turno: turno as Curso["turno"] };
+        const payload = {
+          nome: nome.trim().toUpperCase(),
+          codigo: codigo.trim(),
+          turno: turno as Curso["turno"],
+          cargaHorariaComplementar: editing.cargaHorariaComplementar ?? CARGA_HORARIA_COMPLEMENTAR_PADRAO,
+        };
         await updateCurso(editing.id, payload);
         toast.success("Curso atualizado.");
       } else {
-        const payload = { nome: nome.trim().toUpperCase(), turno: turno as Curso["turno"] };
+        const payload = {
+          nome: nome.trim().toUpperCase(),
+          turno: turno as Curso["turno"],
+          cargaHorariaComplementar: CARGA_HORARIA_COMPLEMENTAR_PADRAO,
+        };
         await createCurso(payload);
         toast.success("Curso cadastrado com código automático.");
       }
@@ -212,7 +232,7 @@ const AdminCursos: React.FC = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Código</TableHead>
                   <TableHead>Turno</TableHead>
-                  <TableHead className="w-[100px] text-right">Ações</TableHead>
+                  <TableHead className="w-[132px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -234,6 +254,9 @@ const AdminCursos: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openRules(curso)}>
+                          <SlidersHorizontal className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(curso)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -284,7 +307,7 @@ const AdminCursos: React.FC = () => {
               </Select>
             </div>
             <div className="rounded-md bg-muted/60 border border-border/60 px-3 py-2 text-xs text-muted-foreground">
-              Carga horária complementar: <span className="font-semibold text-foreground">100h</span> (padrão institucional)
+              Carga horária complementar: <span className="font-semibold text-foreground">{CARGA_HORARIA_COMPLEMENTAR_PADRAO}h</span> (padrão institucional)
             </div>
           </div>
           <DialogFooter>
@@ -294,6 +317,24 @@ const AdminCursos: React.FC = () => {
               {editing ? "Salvar" : "Cadastrar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={rulesDialogOpen} onOpenChange={setRulesDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Regras de atividades do curso</DialogTitle>
+          </DialogHeader>
+          {rulesTarget && (
+            <CourseRulesEditor
+              curso={rulesTarget}
+              onSaved={() => {
+                setRulesDialogOpen(false);
+                setRulesTarget(null);
+                loadCursos();
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

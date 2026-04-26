@@ -28,11 +28,16 @@ import UploadDropzone from "@/components/UploadDropzone";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   GRUPOS_ATIVIDADES,
+  type GrupoAtividade,
   findAtividadeById,
   findGrupoByAtividadeId,
 } from "@/lib/categoriasComplementares";
 
 interface FloatingUploadButtonProps {
+  cursos?: Array<{ id?: string; nome: string; codigo?: string; turno?: string }>;
+  gruposAtividades?: GrupoAtividade[];
+  cursoId?: string;
+  onCursoChange?: (value: string) => void;
   file: File | null;
   onFileSelect: (file: File) => void;
   onFileRemove: () => void;
@@ -61,6 +66,10 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
   onUpload,
   open: openProp,
   onOpenChange,
+  cursos = [],
+  gruposAtividades,
+  cursoId = "",
+  onCursoChange,
 }) => {
   const [openInternal, setOpenInternal] = useState(false);
   const [grupoId, setGrupoId] = useState("");
@@ -84,13 +93,17 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
 
   useEffect(() => {
     if (categoriaId) {
-      const grupo = findGrupoByAtividadeId(categoriaId);
+      const grupos = gruposAtividades?.length ? gruposAtividades : GRUPOS_ATIVIDADES;
+      const grupo = grupos.find((item) => item.atividades.some((atividade) => atividade.id === categoriaId)) || findGrupoByAtividadeId(categoriaId);
       setGrupoId(grupo?.id ?? "");
     }
-  }, [categoriaId]);
+  }, [categoriaId, gruposAtividades]);
 
-  const categoriaInfo = categoriaId ? findAtividadeById(categoriaId) : null;
-  const grupoSelecionado = GRUPOS_ATIVIDADES.find((grupo) => grupo.id === grupoId);
+  const gruposDisponiveis = gruposAtividades?.length ? gruposAtividades : GRUPOS_ATIVIDADES;
+  const categoriaInfo = categoriaId
+    ? gruposDisponiveis.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId)
+    : null;
+  const grupoSelecionado = gruposDisponiveis.find((grupo) => grupo.id === grupoId);
 
   const handleGrupoChange = (value: string) => {
     setGrupoId(value);
@@ -99,6 +112,26 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
 
   const content = (
     <div className="space-y-4">
+      {cursos.length > 0 && onCursoChange && (
+        <div>
+          <label className="text-sm font-medium text-foreground">
+            Curso <span className="text-destructive">*</span>
+          </label>
+          <Select value={cursoId} onValueChange={onCursoChange} disabled={uploading}>
+            <SelectTrigger className="mt-1.5">
+              <SelectValue placeholder="Selecione o curso..." />
+            </SelectTrigger>
+            <SelectContent>
+              {cursos.filter((curso) => !!curso.id).map((curso) => (
+                <SelectItem key={curso.id} value={curso.id as string}>
+                  {curso.nome}{curso.codigo ? ` (${curso.codigo})` : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div>
         <label className="text-sm font-medium text-foreground">
           Tipo de atividade <span className="text-destructive">*</span>
@@ -112,7 +145,7 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
             <SelectValue placeholder="Selecione o tipo..." />
           </SelectTrigger>
           <SelectContent>
-            {GRUPOS_ATIVIDADES.map((grupo) => (
+            {gruposDisponiveis.map((grupo) => (
               <SelectItem key={grupo.id} value={grupo.id}>
                 {grupo.label}
               </SelectItem>
@@ -207,7 +240,7 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
 
       <Button
         onClick={onUpload}
-        disabled={!file || !categoriaId || uploading}
+        disabled={!file || !categoriaId || (cursos.length > 0 && !cursoId) || uploading}
         className="w-full"
         size="lg"
       >

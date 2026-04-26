@@ -33,6 +33,9 @@ export interface CertificadoMeta {
   observacaoAluno: string;
   categoriaId: string | null;
   categoriaNome: string | null;
+  cursoId?: string | null;
+  cursoNome?: string | null;
+  cursoCodigo?: string | null;
   horasInformadas: number | null;
   horasAprovadas: number | null;
   observacaoAdmin: string | null;
@@ -76,7 +79,13 @@ export async function processarCertificado(
   nomeArquivo: string,
   token: string,
   categoriaId?: string | null,
-  categoriaNome?: string | null
+  categoriaNome?: string | null,
+  cursoId?: string | null,
+  cursoNome?: string | null,
+  cursoCodigo?: string | null,
+  nomeAluno?: string,
+  emailAluno?: string,
+  observacaoAluno?: string
 ): Promise<{ ok: boolean; finalPath?: string; error?: string; encontrados?: string[] }> {
   const res = await fetch(`${API_BASE}/certificados/processar`, {
     method: "POST",
@@ -84,7 +93,19 @@ export async function processarCertificado(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ uid, storagePath, nomeArquivo, categoriaId, categoriaNome }),
+    body: JSON.stringify({
+      uid,
+      storagePath,
+      nomeArquivo,
+      categoriaId,
+      categoriaNome,
+      cursoId,
+      cursoNome,
+      cursoCodigo,
+      nomeAluno,
+      emailAluno,
+      observacaoAluno,
+    }),
   });
   const data = await res.json();
   if (!res.ok) {
@@ -106,6 +127,9 @@ export async function saveCertificadoMeta(data: {
   observacaoAluno: string;
   categoriaId: string | null;
   categoriaNome: string | null;
+  cursoId?: string | null;
+  cursoNome?: string | null;
+  cursoCodigo?: string | null;
 }): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     ...data,
@@ -161,14 +185,21 @@ export async function fetchCertificados(uid: string): Promise<CertificadoMeta[]>
 
 export async function saveRejectedCertificado(data: {
   uid: string;
+  nomeAluno?: string;
+  emailAluno?: string;
   nomeArquivo: string;
   motivoRejeicao: string;
   encontrados?: string[];
   categoriaId?: string | null;
   categoriaNome?: string | null;
+  cursoId?: string | null;
+  cursoNome?: string | null;
+  cursoCodigo?: string | null;
 }): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     uid: data.uid,
+    nomeAluno: data.nomeAluno || "",
+    emailAluno: data.emailAluno || "",
     nomeArquivo: data.nomeArquivo,
     storagePath: "",
     downloadURL: "",
@@ -179,6 +210,9 @@ export async function saveRejectedCertificado(data: {
     observacaoAluno: "",
     categoriaId: data.categoriaId ?? null,
     categoriaNome: data.categoriaNome ?? null,
+    cursoId: data.cursoId ?? null,
+    cursoNome: data.cursoNome ?? null,
+    cursoCodigo: data.cursoCodigo ?? null,
     horasInformadas: null,
     horasAprovadas: null,
     observacaoAdmin: null,

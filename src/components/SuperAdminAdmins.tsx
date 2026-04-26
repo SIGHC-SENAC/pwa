@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +10,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,7 +52,7 @@ const SuperAdminAdmins: React.FC = () => {
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cursoId, setCursoId] = useState("");
+  const [cursoIds, setCursoIds] = useState<string[]>([]);
 
   const loadAdmins = useCallback(async () => {
     setLoading(true);
@@ -67,15 +61,11 @@ const SuperAdminAdmins: React.FC = () => {
       setAdmins(data);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar Coordenadores.");
+      toast.error("Erro ao carregar coordenadores.");
     } finally {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    loadAdmins();
-  }, [loadAdmins]);
 
   const loadCursos = useCallback(async () => {
     try {
@@ -88,14 +78,31 @@ const SuperAdminAdmins: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    loadAdmins();
     loadCursos();
-  }, [loadCursos]);
+  }, [loadAdmins, loadCursos]);
+
+  const getAdminCursoIds = (admin: AdminUser) => {
+    return admin.cursoIds?.length ? admin.cursoIds : admin.cursoId ? [admin.cursoId] : [];
+  };
+
+  const cursosLabel = (admin: AdminUser) => {
+    if (admin.cursos?.length) return admin.cursos.map((curso) => curso.codigo || curso.nome).join(", ");
+    return admin.cursoNome || "Curso nao vinculado";
+  };
+
+  const toggleCurso = (id?: string) => {
+    if (!id) return;
+    setCursoIds((current) =>
+      current.includes(id) ? current.filter((cursoId) => cursoId !== id) : [...current, id]
+    );
+  };
 
   const openNew = () => {
     setEditing(null);
     setNome("");
     setEmail("");
-    setCursoId("");
+    setCursoIds([]);
     setDialogOpen(true);
   };
 
@@ -103,23 +110,23 @@ const SuperAdminAdmins: React.FC = () => {
     setEditing(admin);
     setNome(admin.nome);
     setEmail(admin.email);
-    setCursoId(admin.cursoId || "");
+    setCursoIds(getAdminCursoIds(admin));
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !email.trim() || !cursoId) {
+    if (!nome.trim() || !email.trim() || cursoIds.length === 0) {
       toast.error("Preencha todos os campos.");
       return;
     }
     setSaving(true);
     try {
       if (editing) {
-        await updateAdmin(editing.id, { nome: nome.trim(), email: email.trim(), cursoId });
+        await updateAdmin(editing.id, { nome: nome.trim(), email: email.trim(), cursoIds });
         toast.success("Coordenador atualizado.");
       } else {
-        await createAdmin({ nome: nome.trim(), email: email.trim(), cursoId });
-        toast.success("Coordenador cadastrado. A senha temporária foi enviada por e-mail.");
+        await createAdmin({ nome: nome.trim(), email: email.trim(), cursoIds });
+        toast.success("Coordenador cadastrado. A senha temporaria foi enviada por e-mail.");
       }
       setDialogOpen(false);
       loadAdmins();
@@ -135,7 +142,7 @@ const SuperAdminAdmins: React.FC = () => {
     setDeleting(true);
     try {
       await deleteAdmin(deleteTarget.id);
-      toast.success("Admin excluído.");
+      toast.success("Admin excluido.");
       setDeleteTarget(null);
       loadAdmins();
     } catch (err: any) {
@@ -150,24 +157,23 @@ const SuperAdminAdmins: React.FC = () => {
     return (
       a.nome.toLowerCase().includes(q) ||
       a.email.toLowerCase().includes(q) ||
-      (a.cursoNome || "").toLowerCase().includes(q) ||
-      (a.cursoCodigo || "").toLowerCase().includes(q)
+      cursosLabel(a).toLowerCase().includes(q)
     );
   });
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
             <Shield className="h-5 w-5 text-primary" />
-            Gestão de Coordenadores
+            Gestao de Coordenadores
           </h2>
           <p className="text-sm text-muted-foreground">
-            Adicione e gerencie os Coordenadores do sistema.
+            Adicione e gerencie os coordenadores do sistema.
           </p>
         </div>
-        <Button onClick={openNew} className="gap-2 shrink-0">
+        <Button onClick={openNew} className="shrink-0 gap-2">
           <Plus className="h-4 w-4" />
           Novo Coordenador
         </Button>
@@ -175,23 +181,18 @@ const SuperAdminAdmins: React.FC = () => {
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar admin..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+        <Input placeholder="Buscar admin..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
       </div>
 
-      <Card className="shadow-sm overflow-hidden">
+      <Card className="overflow-hidden shadow-sm">
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-              <Shield className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+              <Shield className="mb-3 h-10 w-10 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">
                 {admins.length === 0 ? "Nenhum coordenador cadastrado." : "Nenhum resultado encontrado."}
               </p>
@@ -202,8 +203,8 @@ const SuperAdminAdmins: React.FC = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead className="w-[100px] text-right">Ações</TableHead>
+                  <TableHead>Cursos</TableHead>
+                  <TableHead className="w-[100px] text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -211,9 +212,7 @@ const SuperAdminAdmins: React.FC = () => {
                   <TableRow key={admin.id}>
                     <TableCell className="font-medium">{admin.nome}</TableCell>
                     <TableCell className="text-muted-foreground">{admin.email}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {admin.cursoNome || "Curso não vinculado"}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground">{cursosLabel(admin)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(admin)}>
@@ -240,26 +239,25 @@ const SuperAdminAdmins: React.FC = () => {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Nome completo</label>
-              <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: João da Silva" />
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Joao da Silva" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">E-mail</label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ex: joao@exemplo.com" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Curso</label>
-              <Select value={cursoId} onValueChange={setCursoId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um curso" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cursos.filter((curso) => !!curso.id).map((curso) => (
-                    <SelectItem key={curso.id} value={curso.id as string}>
-                      {curso.nome} ({curso.codigo})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium text-foreground">Cursos</label>
+              <div className="max-h-56 space-y-2 overflow-y-auto rounded-md border p-3">
+                {cursos.filter((curso) => !!curso.id).map((curso) => (
+                  <label key={curso.id} className="flex items-start gap-2 text-sm">
+                    <Checkbox checked={cursoIds.includes(curso.id as string)} onCheckedChange={() => toggleCurso(curso.id)} />
+                    <span>
+                      <span className="font-medium text-foreground">{curso.nome}</span>
+                      <span className="text-muted-foreground"> - {curso.codigo}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -277,12 +275,12 @@ const SuperAdminAdmins: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir coordenador?</AlertDialogTitle>
             <AlertDialogDescription>
-              O coordenador <strong>{deleteTarget?.nome}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+              O coordenador <strong>{deleteTarget?.nome}</strong> sera removido permanentemente. Esta acao nao pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2">
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
               Excluir
             </AlertDialogAction>

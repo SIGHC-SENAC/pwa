@@ -13,6 +13,7 @@ import {
 import PdfViewerModal from "@/components/PdfViewerModal";
 import AdminDashboardCharts from "@/components/AdminDashboardCharts";
 import AdminAlunosPorTurma from "@/components/AdminAlunosPorTurma";
+import AdminCursoInfo from "@/components/AdminCursoInfo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -56,18 +57,20 @@ import {
   LayoutDashboard,
   ClipboardList,
   GraduationCap,
+  BookOpen,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import NotificationBell from "@/components/NotificationBell";
 
 const senacLogo = "/senac-logo.png";
 
-type Section = "dashboard" | "certificados" | "alunos";
+type Section = "dashboard" | "certificados" | "alunos" | "curso";
 
 const navItems: { id: Section; label: string; icon: React.ElementType; description: string }[] = [
   { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, description: "Visão geral das horas complementares" },
   { id: "certificados", label: "Certificados", icon: ClipboardList,   description: "Análise de horas complementares" },
-  { id: "alunos",       label: "Alunos",       icon: GraduationCap,   description: "Alunos do curso separados por turma" },
+  { id: "alunos",       label: "Alunos",       icon: GraduationCap,   description: "Alunos dos cursos separados por turma" },
+  { id: "curso",        label: "Cursos",       icon: BookOpen,        description: "Cursos vinculados, categorias e limites de horas" },
 ];
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -121,6 +124,15 @@ const Admin: React.FC = () => {
   useEffect(() => { if (!authLoading && !user) navigate("/login"); }, [authLoading, user, navigate]);
   useEffect(() => { if (user && isAdmin) loadData(); }, [user, isAdmin, loadData]);
 
+  const cursoIdsAdmin = useMemo(() => {
+    return userData?.cursoIds?.length ? userData.cursoIds : userData?.cursoId ? [userData.cursoId] : [];
+  }, [userData?.cursoId, userData?.cursoIds]);
+
+  const certificadosVisiveis = useMemo(() => {
+    if (userData?.role === "superAdmin" || cursoIdsAdmin.length === 0) return certificados;
+    return certificados.filter((certificado) => !certificado.cursoId || cursoIdsAdmin.includes(certificado.cursoId));
+  }, [certificados, cursoIdsAdmin, userData?.role]);
+
   const handleAprovar = async (certId: string, horas: number, obs: string) => {
     if (!user || !userData) return;
     await aprovarCertificado(certId, user.uid, userData.nome || user.displayName || "Admin", horas, obs);
@@ -142,17 +154,17 @@ const Admin: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const total     = certificados.length;
-    const pendentes = certificados.filter((c) => c.status === "pendente").length;
-    const aprovados = certificados.filter((c) => c.status === "aprovado").length;
-    const rejeitados= certificados.filter((c) => c.status === "rejeitado").length;
-    const horasTotal= certificados.reduce((s, c) => s + (c.horasAprovadas || 0), 0);
+    const total     = certificadosVisiveis.length;
+    const pendentes = certificadosVisiveis.filter((c) => c.status === "pendente").length;
+    const aprovados = certificadosVisiveis.filter((c) => c.status === "aprovado").length;
+    const rejeitados= certificadosVisiveis.filter((c) => c.status === "rejeitado").length;
+    const horasTotal= certificadosVisiveis.reduce((s, c) => s + (c.horasAprovadas || 0), 0);
     return { total, pendentes, aprovados, rejeitados, horasTotal };
-  }, [certificados]);
+  }, [certificadosVisiveis]);
 
   const alunosSummary = useMemo(() => {
     const map = new Map<string, { nome: string; email: string; total: number; aprovados: number; rejeitados: number; pendentes: number; horas: number }>();
-    certificados.forEach((c) => {
+    certificadosVisiveis.forEach((c) => {
       const e = map.get(c.uid) || { nome: c.nomeAluno, email: c.emailAluno, total: 0, aprovados: 0, rejeitados: 0, pendentes: 0, horas: 0 };
       e.total++;
       if (c.status === "aprovado") { e.aprovados++; e.horas += c.horasAprovadas || 0; }
@@ -161,10 +173,10 @@ const Admin: React.FC = () => {
       map.set(c.uid, e);
     });
     return map;
-  }, [certificados]);
+  }, [certificadosVisiveis]);
 
   const filtered = useMemo(() => {
-    let r = [...certificados];
+    let r = [...certificadosVisiveis];
     if (alunoView) r = r.filter((c) => c.uid === alunoView);
     if (statusFilter !== "todos") r = r.filter((c) => c.status === statusFilter);
     if (searchTerm.trim()) {
@@ -179,7 +191,7 @@ const Admin: React.FC = () => {
     else if (sortOrder === "antigo") r.sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
     else if (sortOrder === "az") r.sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
     return r;
-  }, [certificados, statusFilter, searchTerm, sortOrder, alunoView]);
+  }, [certificadosVisiveis, statusFilter, searchTerm, sortOrder, alunoView]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -349,10 +361,13 @@ const Admin: React.FC = () => {
 
             {/* ── Dashboard ── */}
             {activeSection === "dashboard" && (
-              <AdminDashboardCharts certificados={certificados} loading={loading} />
+              <AdminDashboardCharts certificados={certificadosVisiveis} loading={loading} cursoIds={cursoIdsAdmin} />
             )}
             {activeSection === "alunos" && (
-              <AdminAlunosPorTurma cursoId={userData?.cursoId} certificados={certificados} />
+              <AdminAlunosPorTurma cursoIds={cursoIdsAdmin} certificados={certificadosVisiveis} />
+            )}
+            {activeSection === "curso" && (
+              <AdminCursoInfo cursoId={userData?.cursoId} cursoIds={cursoIdsAdmin} />
             )}
 
             {/* ── Certificados ── */}

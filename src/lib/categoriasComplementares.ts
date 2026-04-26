@@ -3,13 +3,13 @@ export interface CategoriaAtividade {
   descricao: string;
   aproveitamentoMaximo: string;
   requisito: string;
-  grupo: "ensino" | "pesquisa" | "extensao";
+  grupo: string;
 }
 
 export interface GrupoAtividade {
   id: string;
   label: string;
-  tipo: "ensino" | "pesquisa" | "extensao";
+  tipo: string;
   atividades: CategoriaAtividade[];
 }
 
@@ -190,6 +190,10 @@ export const TODAS_ATIVIDADES: CategoriaAtividade[] = GRUPOS_ATIVIDADES.flatMap(
 
 export function findAtividadeById(id: string): CategoriaAtividade | undefined {
   return TODAS_ATIVIDADES.find((atividade) => atividade.id === id);
+}
+
+export function findAtividadeInGrupos(grupos: GrupoAtividade[], id: string): CategoriaAtividade | undefined {
+  return grupos.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === id);
 }
 
 export function findGrupoById(id: string): GrupoAtividade | undefined {

@@ -20,6 +20,8 @@ export interface AdminUser {
   cursoId?: string;
   cursoNome?: string;
   cursoCodigo?: string;
+  cursoIds?: string[];
+  cursos?: Array<{ id: string; nome: string; codigo?: string; turno?: string }>;
   createdAt?: number;
 }
 
@@ -30,10 +32,10 @@ export async function fetchAdmins(): Promise<AdminUser[]> {
   return res.json();
 }
 
-export async function createAdmin(payload: { nome: string; email: string; cursoId: string }): Promise<any> {
+export async function createAdmin(payload: { nome: string; email: string; cursoId?: string; cursoIds?: string[] }): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins`, {
-    method: "jPOST",
+    method: "POST",
     headers,
     body: JSON.stringify(payload),
   });
@@ -44,7 +46,7 @@ export async function createAdmin(payload: { nome: string; email: string; cursoI
   return res.json();
 }
 
-export async function updateAdmin(id: string, payload: { nome?: string; email?: string; cursoId?: string }): Promise<any> {
+export async function updateAdmin(id: string, payload: { nome?: string; email?: string; cursoId?: string; cursoIds?: string[] }): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins/${id}`, {
     method: "PUT",

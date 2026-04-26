@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, CheckCircle2, XCircle, FileText, ExternalLink } from "lucide-react";
 import { CertificadoMeta, getDownloadURLFromPath } from "@/services/certificadoService";
-import { findAtividadeById, GRUPOS_ATIVIDADES } from "@/lib/categoriasComplementares";
+import { findAtividadeById, GRUPOS_ATIVIDADES, type GrupoAtividade } from "@/lib/categoriasComplementares";
+import { fetchCursoById } from "@/services/cursoService";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -73,6 +74,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const [pdfUrl, setPdfUrl] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [categoriaSaving, setCategoriaSaving] = useState(false);
+  const [gruposAtividades, setGruposAtividades] = useState<GrupoAtividade[]>(GRUPOS_ATIVIDADES);
   const isMobile = useIsMobile();
 
   React.useEffect(() => {
@@ -86,6 +88,26 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
       setCategoriaId(cert.categoriaId || "");
     }
   }, [cert]);
+
+  React.useEffect(() => {
+    let active = true;
+    if (!cert?.cursoId) {
+      setGruposAtividades(GRUPOS_ATIVIDADES);
+      return;
+    }
+
+    fetchCursoById(cert.cursoId)
+      .then((curso) => {
+        if (active) setGruposAtividades(curso.regrasAtividades?.length ? curso.regrasAtividades : GRUPOS_ATIVIDADES);
+      })
+      .catch(() => {
+        if (active) setGruposAtividades(GRUPOS_ATIVIDADES);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cert?.cursoId]);
 
   React.useEffect(() => {
     if (!open || !cert) return;
@@ -172,7 +194,9 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const handleSalvarCategoria = async () => {
     if (!categoriaChanged) return;
 
-    const categoria = categoriaId ? findAtividadeById(categoriaId) : undefined;
+    const categoria = categoriaId
+      ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId)
+      : undefined;
     const categoriaNome = categoria ? `${categoria.id} - ${categoria.descricao}` : null;
 
     setCategoriaSaving(true);
@@ -265,7 +289,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="sem-categoria">Sem categoria</SelectItem>
-                {GRUPOS_ATIVIDADES.map((grupo) => (
+                {gruposAtividades.map((grupo) => (
                   <SelectGroup key={grupo.id}>
                     <SelectLabel>{grupo.label}</SelectLabel>
                     {grupo.atividades.map((atividade) => (

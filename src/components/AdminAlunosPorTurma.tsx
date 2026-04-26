@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 type Props = {
   cursoId?: string;
+  cursoIds?: string[];
   certificados: CertificadoMeta[];
 };
 
@@ -25,7 +26,7 @@ type TurmaGroup = {
   isSemTurma?: boolean;
 };
 
-const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, certificados }) => {
+const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds, certificados }) => {
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,7 +34,8 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, certificados }) => {
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!cursoId) {
+    const ids = cursoIds?.length ? cursoIds : cursoId ? [cursoId] : [];
+    if (ids.length === 0) {
       setTurmas([]);
       setAlunos([]);
       setLoading(false);
@@ -42,10 +44,13 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, certificados }) => {
 
     setLoading(true);
     try {
-      const [turmasData, alunosData] = await Promise.all([
-        fetchTurmas(cursoId),
-        fetchAlunos(cursoId),
+      const [turmasPorCurso, alunosPorCurso] = await Promise.all([
+        Promise.all(ids.map((id) => fetchTurmas(id))),
+        Promise.all(ids.map((id) => fetchAlunos(id))),
       ]);
+      const turmasData = turmasPorCurso.flat();
+      const alunosMap = new Map(alunosPorCurso.flat().map((aluno) => [aluno.id, aluno]));
+      const alunosData = Array.from(alunosMap.values());
 
       setTurmas(turmasData);
       setAlunos(alunosData);
@@ -55,7 +60,7 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, certificados }) => {
     } finally {
       setLoading(false);
     }
-  }, [cursoId]);
+  }, [cursoId, cursoIds]);
 
   useEffect(() => {
     loadData();
@@ -128,7 +133,7 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, certificados }) => {
     );
   }
 
-  if (!cursoId) {
+  if (!cursoId && !cursoIds?.length) {
     return (
       <Card className="shadow-sm">
         <CardHeader>

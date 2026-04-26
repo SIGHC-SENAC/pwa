@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -30,11 +31,10 @@ const AdminAddAluno: React.FC = () => {
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [cursoId, setCursoId] = useState("");
+  const [cursoIds, setCursoIds] = useState<string[]>([]);
   const [turmaId, setTurmaId] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Lista de alunos
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
   const [filtroCursoId, setFiltroCursoId] = useState("todos");
@@ -91,32 +91,44 @@ const AdminAddAluno: React.FC = () => {
 
   useEffect(() => {
     setTurmaId("");
-    if (cursoId) {
-      loadTurmasByCurso(cursoId);
+    if (cursoIds[0]) {
+      loadTurmasByCurso(cursoIds[0]);
     } else {
       setTurmas([]);
     }
-  }, [cursoId, loadTurmasByCurso]);
+  }, [cursoIds, loadTurmasByCurso]);
+
+  const toggleCurso = (id?: string) => {
+    if (!id) return;
+    setCursoIds((current) =>
+      current.includes(id) ? current.filter((cursoId) => cursoId !== id) : [...current, id]
+    );
+  };
+
+  const cursosLabel = (aluno: Aluno) => {
+    if (aluno.cursos?.length) return aluno.cursos.map((curso) => curso.codigo || curso.nome).join(", ");
+    return aluno.cursoNome || aluno.cursoCodigo || "-";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !email.trim() || !cursoId) {
-      toast.error("Preencha todos os campos obrigatórios.");
+    if (!nome.trim() || !email.trim() || cursoIds.length === 0) {
+      toast.error("Preencha todos os campos obrigatorios.");
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast.error("E-mail inválido.");
+      toast.error("E-mail invalido.");
       return;
     }
 
     setSaving(true);
     try {
-      await createAluno({ nome: nome.trim(), email: email.trim(), cursoId, turmaId: turmaId || undefined });
-      toast.success("Aluno cadastrado com sucesso! Um e-mail de boas-vindas foi enviado.");
+      await createAluno({ nome: nome.trim(), email: email.trim(), cursoIds, turmaId: turmaId || undefined });
+      toast.success("Aluno cadastrado ou atualizado com sucesso.");
       setNome("");
       setEmail("");
-      setCursoId("");
+      setCursoIds([]);
       setTurmaId("");
       loadAlunos();
     } catch (err: any) {
@@ -126,23 +138,21 @@ const AdminAddAluno: React.FC = () => {
     }
   };
 
-  const selectedCurso = cursos.find((c) => c.id === cursoId);
-
+  const selectedCurso = cursos.find((c) => c.id === cursoIds[0]);
   const alunosFiltrados = alunos.filter((a) =>
     a.nome.toLowerCase().includes(buscaNome.toLowerCase())
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      {/* Formulário de cadastro */}
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
             <UserPlus className="h-5 w-5 text-primary" />
             Cadastrar Aluno
           </h2>
           <p className="text-sm text-muted-foreground">
-            Adicione um aluno vinculado a um curso e turma.
+            Adicione ou vincule um aluno a um ou mais cursos.
           </p>
         </div>
 
@@ -151,57 +161,44 @@ const AdminAddAluno: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Nome completo</label>
-                <Input
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  placeholder="Ex: Maria da Silva"
-                />
+                <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Maria da Silva" />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">E-mail</label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Ex: maria@exemplo.com"
-                />
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ex: maria@exemplo.com" />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Curso</label>
+                <label className="text-sm font-medium text-foreground">Cursos</label>
                 {loadingCursos ? (
                   <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Carregando cursos...
                   </div>
                 ) : cursos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">
-                    Nenhum curso cadastrado. Cadastre um curso primeiro.
-                  </p>
+                  <p className="py-2 text-sm text-muted-foreground">Nenhum curso cadastrado. Cadastre um curso primeiro.</p>
                 ) : (
-                  <Select value={cursoId} onValueChange={setCursoId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um curso" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cursos.map((c) => (
-                        <SelectItem key={c.id || c.codigo} value={c.id || c.codigo}>
-                          {c.nome} — {c.codigo} ({c.turno})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
+                    {cursos.map((c) => (
+                      <label key={c.id || c.codigo} className="flex items-start gap-2 text-sm">
+                        <Checkbox checked={!!c.id && cursoIds.includes(c.id)} onCheckedChange={() => toggleCurso(c.id)} />
+                        <span>
+                          <span className="font-medium text-foreground">{c.nome}</span>
+                          <span className="text-muted-foreground"> - {c.codigo} ({c.turno})</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 )}
                 {selectedCurso && (
                   <p className="text-xs text-muted-foreground">
-                    {selectedCurso.nome} • {selectedCurso.codigo} • Turno: {selectedCurso.turno}
+                    A turma sera vinculada ao primeiro curso selecionado: {selectedCurso.nome}
                   </p>
                 )}
               </div>
 
-              {/* Turma Selection */}
-              {cursoId && (
+              {cursoIds.length > 0 && (
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground">Turma</label>
                   {loadingTurmas ? (
@@ -210,9 +207,7 @@ const AdminAddAluno: React.FC = () => {
                       Carregando turmas...
                     </div>
                   ) : turmas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2">
-                      Nenhuma turma cadastrada para este curso.
-                    </p>
+                    <p className="py-2 text-sm text-muted-foreground">Nenhuma turma cadastrada para o primeiro curso selecionado.</p>
                   ) : (
                     <Select value={turmaId} onValueChange={setTurmaId}>
                       <SelectTrigger>
@@ -221,7 +216,7 @@ const AdminAddAluno: React.FC = () => {
                       <SelectContent>
                         {turmas.map((t) => (
                           <SelectItem key={t.id} value={t.id!}>
-                            {t.nome} — {t.periodoInicio} a {t.periodoFinal} ({t.horario})
+                            {t.nome} - {t.periodoInicio} a {t.periodoFinal} ({t.horario})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -230,47 +225,30 @@ const AdminAddAluno: React.FC = () => {
                 </div>
               )}
 
-              <Button
-                type="submit"
-                disabled={saving || loadingCursos || cursos.length === 0}
-                className="w-full gap-2"
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <UserPlus className="h-4 w-4" />
-                )}
-                {saving ? "Cadastrando..." : "Cadastrar Aluno"}
+              <Button type="submit" disabled={saving || loadingCursos || cursos.length === 0} className="w-full gap-2">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                {saving ? "Salvando..." : "Salvar Aluno"}
               </Button>
             </form>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de alunos */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
             <Users className="h-5 w-5 text-primary" />
             Alunos Cadastrados
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {alunosFiltrados.length} aluno(s) encontrado(s)
-          </p>
+          <p className="text-sm text-muted-foreground">{alunosFiltrados.length} aluno(s) encontrado(s)</p>
         </div>
 
         <Card className="shadow-sm">
-          <CardContent className="p-4 sm:p-6 space-y-4">
-            {/* Filtros */}
-            <div className="flex flex-col sm:flex-row gap-2">
+          <CardContent className="space-y-4 p-4 sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={buscaNome}
-                  onChange={(e) => setBuscaNome(e.target.value)}
-                  placeholder="Buscar por nome..."
-                  className="pl-9"
-                />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={buscaNome} onChange={(e) => setBuscaNome(e.target.value)} placeholder="Buscar por nome..." className="pl-9" />
               </div>
               <Select value={filtroCursoId} onValueChange={setFiltroCursoId}>
                 <SelectTrigger className="w-full sm:w-[220px]">
@@ -287,15 +265,14 @@ const AdminAddAluno: React.FC = () => {
               </Select>
             </div>
 
-            {/* Tabela */}
             {loadingAlunos ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Carregando alunos...
               </div>
             ) : alunosFiltrados.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <GraduationCap className="h-10 w-10 mb-2 opacity-40" />
+                <GraduationCap className="mb-2 h-10 w-10 opacity-40" />
                 <p className="text-sm">Nenhum aluno encontrado.</p>
               </div>
             ) : (
@@ -305,7 +282,7 @@ const AdminAddAluno: React.FC = () => {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead className="hidden sm:table-cell">E-mail</TableHead>
-                      <TableHead>Curso</TableHead>
+                      <TableHead>Cursos</TableHead>
                       <TableHead className="hidden md:table-cell">Turma</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -313,16 +290,14 @@ const AdminAddAluno: React.FC = () => {
                     {alunosFiltrados.map((aluno) => (
                       <TableRow key={aluno.id}>
                         <TableCell className="font-medium">{aluno.nome}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground text-xs">
-                          {aluno.email}
-                        </TableCell>
+                        <TableCell className="hidden text-xs text-muted-foreground sm:table-cell">{aluno.email}</TableCell>
                         <TableCell>
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            {aluno.cursoNome || aluno.cursoCodigo || "—"}
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                            {cursosLabel(aluno)}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
-                          {aluno.turmaNome || "—"}
+                        <TableCell className="hidden text-xs text-muted-foreground md:table-cell">
+                          {aluno.turmaNome || "-"}
                         </TableCell>
                       </TableRow>
                     ))}
