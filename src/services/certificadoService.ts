@@ -86,7 +86,7 @@ export async function processarCertificado(
   nomeAluno?: string,
   emailAluno?: string,
   observacaoAluno?: string
-): Promise<{ ok: boolean; finalPath?: string; error?: string; encontrados?: string[] }> {
+): Promise<{ ok: boolean; finalPath?: string; certificadoId?: string; error?: string; encontrados?: string[] }> {
   const res = await fetch(`${API_BASE}/certificados/processar`, {
     method: "POST",
     headers: {

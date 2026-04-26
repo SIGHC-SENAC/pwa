@@ -13,6 +13,7 @@ firebase.initializeApp({
 
 const DB_NAME = "fcm_notifications_db";
 const STORE_NAME = "notifications";
+const SITE_URL = "https://sighc.com.br";
 
 function openNotificationsDB() {
   return new Promise((resolve, reject) => {
@@ -57,6 +58,8 @@ messaging.onBackgroundMessage(async (payload) => {
     timestamp: Date.now(),
     read: false,
     source: "background",
+    certificadoId: payload.data?.certificadoId || "",
+    url: payload.data?.url || "",
   };
   await saveNotificationToDB(notification);
 
@@ -69,4 +72,35 @@ messaging.onBackgroundMessage(async (payload) => {
       data: payload.data,
     });
   }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const data = event.notification.data || {};
+  const url = data.url || (data.certificadoId
+    ? `${SITE_URL}/admin?certificadoId=${encodeURIComponent(data.certificadoId)}`
+    : `${SITE_URL}/admin`);
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      const targetUrl = new URL(url);
+
+      for (const client of clientList) {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.origin === targetUrl.origin && "focus" in client) {
+          if ("navigate" in client) {
+            return client.navigate(url).then((navigatedClient) => navigatedClient?.focus());
+          }
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+
+      return undefined;
+    })
+  );
 });

@@ -15,6 +15,12 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const getSafeRedirect = () => {
+    const redirect = new URLSearchParams(window.location.search).get("redirect");
+    if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return null;
+    return redirect;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -34,7 +40,10 @@ const Login: React.FC = () => {
           if (userDoc.exists()) role = userDoc.data().role || "";
         } catch {}
       }
-      if (role === "superAdmin") {
+      const redirect = getSafeRedirect();
+      if (redirect && (role === "admin" || role === "superAdmin")) {
+        navigate(redirect);
+      } else if (role === "superAdmin") {
         navigate("/super-admin");
       } else if (role === "admin") {
         navigate("/admin");

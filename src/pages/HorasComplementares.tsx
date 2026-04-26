@@ -145,7 +145,7 @@ const HorasComplementares: React.FC = () => {
           try {
             const token = await user.getIdToken();
 
-            await processarCertificado(
+            const resultado = await processarCertificado(
               user.uid,
               storagePath,
               file.name,
@@ -177,6 +177,10 @@ const HorasComplementares: React.FC = () => {
                 body: JSON.stringify({
                   nomeAluno: user.displayName || userData.nome || "Aluno",
                   nomeArquivo: file.name,
+                  certificadoId: resultado.certificadoId,
+                  cursoId: cursoSelecionado?.id || cursoId,
+                  cursoNome: cursoSelecionado?.nome || null,
+                  categoriaNome,
                 }),
               });
             } catch {}

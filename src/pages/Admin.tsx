@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
@@ -91,6 +91,8 @@ const ITEMS_PER_PAGE = 15;
 const Admin: React.FC = () => {
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = userData?.role === "admin" || userData?.role === "superAdmin";
   const isMobile = useIsMobile();
 
@@ -121,7 +123,12 @@ const Admin: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { if (!authLoading && !user) navigate("/login"); }, [authLoading, user, navigate]);
+  useEffect(() => {
+    if (!authLoading && !user) {
+      const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
+      navigate(`/login?redirect=${redirect}`);
+    }
+  }, [authLoading, location.pathname, location.search, navigate, user]);
   useEffect(() => { if (user && isAdmin) loadData(); }, [user, isAdmin, loadData]);
 
   const cursoIdsAdmin = useMemo(() => {
@@ -132,6 +139,28 @@ const Admin: React.FC = () => {
     if (userData?.role === "superAdmin" || cursoIdsAdmin.length === 0) return certificados;
     return certificados.filter((certificado) => !certificado.cursoId || cursoIdsAdmin.includes(certificado.cursoId));
   }, [certificados, cursoIdsAdmin, userData?.role]);
+
+  const closeCertificadoModal = useCallback(() => {
+    setModalOpen(false);
+    setSelectedCert(null);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("certificadoId");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    const certificadoId = searchParams.get("certificadoId");
+    if (!certificadoId || loading || !isAdmin) return;
+
+    const certificado = certificadosVisiveis.find((item) => item.id === certificadoId);
+    if (!certificado) return;
+
+    setActiveSection("certificados");
+    setSelectedCert(certificado);
+    setModalOpen(true);
+  }, [certificadosVisiveis, isAdmin, loading, searchParams]);
 
   const handleAprovar = async (certId: string, horas: number, obs: string) => {
     if (!user || !userData) return;
@@ -530,7 +559,7 @@ const Admin: React.FC = () => {
       <PdfViewerModal
         cert={selectedCert}
         open={modalOpen}
-        onClose={() => { setModalOpen(false); setSelectedCert(null); }}
+        onClose={closeCertificadoModal}
         onAprovar={handleAprovar}
         onRejeitar={handleRejeitar}
         onAtualizarCategoria={handleAtualizarCategoria}
