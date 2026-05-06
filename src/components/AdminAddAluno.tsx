@@ -23,23 +23,33 @@ import { Loader2, UserPlus, Users, Search, GraduationCap } from "lucide-react";
 import { fetchCursos, createAluno, fetchAlunos, Curso, Aluno } from "@/services/cursoService";
 import { fetchTurmas, Turma } from "@/services/turmaService";
 
+/**
+ * Componente AdminAddAluno
+ * Interface para administradores cadastrarem novos alunos ou gerenciarem os existentes.
+ */
 const AdminAddAluno: React.FC = () => {
+  // Estados para carregamento de dados de suporte
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loadingCursos, setLoadingCursos] = useState(true);
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [loadingTurmas, setLoadingTurmas] = useState(false);
 
+  // Estados do formulário de criação/edição
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cursoIds, setCursoIds] = useState<string[]>([]);
   const [turmaId, setTurmaId] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Estados da lista de alunos e filtros
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
   const [filtroCursoId, setFiltroCursoId] = useState("todos");
   const [buscaNome, setBuscaNome] = useState("");
 
+  /**
+   * Busca a lista de cursos disponíveis
+   */
   const loadCursos = useCallback(async () => {
     setLoadingCursos(true);
     try {
@@ -52,6 +62,9 @@ const AdminAddAluno: React.FC = () => {
     }
   }, []);
 
+  /**
+   * Busca turmas vinculadas a um curso específico
+   */
   const loadTurmasByCurso = useCallback(async (cId: string) => {
     if (!cId) {
       setTurmas([]);
@@ -68,6 +81,9 @@ const AdminAddAluno: React.FC = () => {
     }
   }, []);
 
+  /**
+   * Busca a lista de alunos, opcionalmente filtrada por curso
+   */
   const loadAlunos = useCallback(async () => {
     setLoadingAlunos(true);
     try {
@@ -81,14 +97,17 @@ const AdminAddAluno: React.FC = () => {
     }
   }, [filtroCursoId]);
 
+  // Efeito inicial para carregar cursos
   useEffect(() => {
     loadCursos();
   }, [loadCursos]);
 
+  // Efeito para recarregar alunos quando filtros mudam
   useEffect(() => {
     loadAlunos();
   }, [loadAlunos]);
 
+  // Efeito para buscar turmas sempre que o curso selecionado no formulário mudar
   useEffect(() => {
     setTurmaId("");
     if (cursoIds[0]) {
@@ -98,6 +117,9 @@ const AdminAddAluno: React.FC = () => {
     }
   }, [cursoIds, loadTurmasByCurso]);
 
+  /**
+   * Alterna a seleção de um curso no formulário (suporta múltiplos cursos)
+   */
   const toggleCurso = (id?: string) => {
     if (!id) return;
     setCursoIds((current) =>
@@ -105,11 +127,17 @@ const AdminAddAluno: React.FC = () => {
     );
   };
 
+  /**
+   * Formata a exibição dos cursos de um aluno na tabela
+   */
   const cursosLabel = (aluno: Aluno) => {
     if (aluno.cursos?.length) return aluno.cursos.map((curso) => curso.codigo || curso.nome).join(", ");
     return aluno.cursoNome || aluno.cursoCodigo || "-";
   };
 
+  /**
+   * Processa o envio do formulário de cadastro de aluno
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !email.trim() || cursoIds.length === 0) {
@@ -138,6 +166,7 @@ const AdminAddAluno: React.FC = () => {
     }
   };
 
+  // Memoização/Cálculo de filtros na UI
   const selectedCurso = cursos.find((c) => c.id === cursoIds[0]);
   const alunosFiltrados = alunos.filter((a) =>
     a.nome.toLowerCase().includes(buscaNome.toLowerCase())
@@ -145,6 +174,7 @@ const AdminAddAluno: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+      {/* COLUNA ESQUERDA: FORMULÁRIO */}
       <div className="space-y-4">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
@@ -234,6 +264,7 @@ const AdminAddAluno: React.FC = () => {
         </Card>
       </div>
 
+      {/* COLUNA DIREITA: LISTAGEM */}
       <div className="space-y-4">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">

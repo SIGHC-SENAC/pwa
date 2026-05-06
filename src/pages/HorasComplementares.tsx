@@ -34,8 +34,14 @@ import {
 
 const senacLogo = "/senac-logo.png";
 
+/**
+ * Tipagem para as abas de navegação da página
+ */
 type Tab = "dashboard" | "historico" | "orientacoes";
 
+/**
+ * Itens de navegação da barra lateral e menu mobile
+ */
 const navItems: { id: Tab; label: string; icon: React.ElementType; description: string }[] = [
   {
     id: "dashboard",
@@ -57,24 +63,35 @@ const navItems: { id: Tab; label: string; icon: React.ElementType; description: 
   },
 ];
 
+/**
+ * Página HorasComplementares
+ * Dashboard principal do aluno para gestão de suas horas e certificados
+ */
 const HorasComplementares: React.FC = () => {
   const { user, userData, loading: authLoading, isAluno } = useAuth();
   const navigate = useNavigate();
 
+  // Estados de navegação e interface
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [uploadOpen, setUploadOpen] = useState(false);
 
+  // Estados para o formulário de upload
   const [file, setFile] = useState<File | null>(null);
   const [observacao, setObservacao] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
-  const [histLoading, setHistLoading] = useState(true);
-  const [curso, setCurso] = useState<Curso | null>(null);
-  const [cursos, setCursos] = useState<Curso[]>([]);
-  const [cursoId, setCursoId] = useState("");
+  
+  // Estados de dados (certificados e cursos)
+  const [certificados, setCertificados] = useState<CertificadoMeta[]>([]); // Lista de certificados do aluno
+  const [histLoading, setHistLoading] = useState(true); // Status de carregamento do histórico
+  const [curso, setCurso] = useState<Curso | null>(null); // Curso selecionado atualmente
+  const [cursos, setCursos] = useState<Curso[]>([]); // Lista de cursos que o aluno está vinculado
+  const [cursoId, setCursoId] = useState(""); // ID do curso ativo no dashboard
 
+  /**
+   * Carrega os certificados do aluno do banco de dados
+   */
   const loadCertificados = useCallback(async () => {
     if (!user) return;
 
@@ -89,14 +106,17 @@ const HorasComplementares: React.FC = () => {
     }
   }, [user]);
 
+  // Redireciona para login se não estiver autenticado
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
   }, [authLoading, navigate, user]);
 
+  // Carrega dados iniciais após autenticação
   useEffect(() => {
     if (user && isAluno) loadCertificados();
   }, [isAluno, loadCertificados, user]);
 
+  // Busca detalhes dos cursos vinculados ao aluno
   useEffect(() => {
     const cursoIds = userData?.cursoIds?.length ? userData.cursoIds : userData?.cursoId ? [userData.cursoId] : [];
     if (cursoIds.length === 0) return;
@@ -111,10 +131,14 @@ const HorasComplementares: React.FC = () => {
       .catch(() => {});
   }, [userData?.cursoId, userData?.cursoIds]);
 
+  // Atualiza o curso selecionado quando cursoId muda
   useEffect(() => {
     setCurso(cursos.find((item) => item.id === cursoId) || cursos[0] || null);
   }, [cursoId, cursos]);
 
+  /**
+   * Gerencia o processo de upload e processamento do certificado
+   */
   const handleUpload = async () => {
     if (!file || !user || !userData || !categoriaId || !cursoId) return;
 
@@ -145,6 +169,7 @@ const HorasComplementares: React.FC = () => {
           try {
             const token = await user.getIdToken();
 
+            // Envia para o backend para extração de dados e validação de segurança
             const resultado = await processarCertificado(
               user.uid,
               storagePath,
@@ -167,6 +192,7 @@ const HorasComplementares: React.FC = () => {
             setProgress(0);
             loadCertificados();
 
+            // Tenta enviar notificação de sucesso (fail-safe)
             try {
               await fetch(`${import.meta.env.VITE_API_BASE_URL}/notificacoes/upload-certificado`, {
                 method: "POST",
@@ -188,6 +214,7 @@ const HorasComplementares: React.FC = () => {
             const motivo = err.message || "Erro ao validar o certificado";
             toast.error(motivo);
 
+            // Registra o erro de validação/segurança no histórico como rejeitado automaticamente
             try {
               await saveRejectedCertificado({
                 uid: user.uid,
@@ -227,10 +254,12 @@ const HorasComplementares: React.FC = () => {
     );
   }
 
+  // Proteção de rota e role
   if (!user) return null;
 
   if (!isAluno) {
     if (userData?.role === "superAdmin") {
+      // Redireciona admins para suas áreas específicas
       navigate("/super-admin");
       return null;
     }
@@ -253,6 +282,7 @@ const HorasComplementares: React.FC = () => {
     );
   }
 
+  // Preparação de dados para exibição
   const displayName = user.displayName || userData?.nome || "Aluno";
   const userEmail = user.email || userData?.email || "";
   const initials = displayName
@@ -263,10 +293,12 @@ const HorasComplementares: React.FC = () => {
     .toUpperCase();
 
   const activeItem = navItems.find((item) => item.id === activeTab)!;
+  // Filtra certificados exibidos baseado no curso selecionado no seletor do dashboard
   const certificadosDoCurso = cursoId
     ? certificados.filter((certificado) => !certificado.cursoId || certificado.cursoId === cursoId)
     : certificados;
 
+  // Soma total de horas já validadas pelo administrador
   const horasAprovadas = certificadosDoCurso.reduce(
     (total, certificado) =>
       total + (certificado.status === "aprovado" && certificado.horasAprovadas ? certificado.horasAprovadas : 0),
@@ -276,6 +308,7 @@ const HorasComplementares: React.FC = () => {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <header className="sticky top-0 z-40 shrink-0 border-b bg-card shadow-sm">
+        {/* Cabeçalho superior com Logo e Perfil */}
         <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex min-w-0 items-center gap-3">
             <img src={senacLogo} alt="Senac Pernambuco" className="h-9 w-auto object-contain sm:h-10" />
@@ -309,6 +342,7 @@ const HorasComplementares: React.FC = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
+        {/* Barra Lateral de Navegação (Desktop) */}
         <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r bg-card md:flex">
           <div className="px-4 pb-2 pt-5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
@@ -366,6 +400,7 @@ const HorasComplementares: React.FC = () => {
           </div>
         </aside>
 
+        {/* Menu de Navegação Inferior (Mobile) */}
         <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-card shadow-[0_-1px_8px_rgba(0,0,0,0.08)] md:hidden">
           <div className="flex">
             {navItems.map(({ id, label, icon: Icon }) => {
@@ -396,6 +431,7 @@ const HorasComplementares: React.FC = () => {
         </div>
 
         <main className="min-w-0 flex-1 overflow-y-auto bg-background">
+          {/* Cabeçalho da Seção Ativa */}
           <div className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-5 py-3.5 backdrop-blur-sm sm:px-8">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -424,6 +460,8 @@ const HorasComplementares: React.FC = () => {
           </div>
 
           <div className="space-y-6 px-4 py-5 pb-24 sm:px-8 sm:py-6 md:pb-8">
+            
+            {/* CONTEÚDO DA ABA: DASHBOARD */}
             {activeTab === "dashboard" && (
               <>
                 <div className="rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 text-primary-foreground shadow-md sm:p-7">
@@ -449,6 +487,7 @@ const HorasComplementares: React.FC = () => {
 
                 <DashboardCards certificados={certificadosDoCurso} loading={histLoading} />
 
+                {/* Componente que detalha o progresso por categoria de atividade */}
                 <ProgressoHoras
                   certificados={certificadosDoCurso}
                   horasAprovadas={horasAprovadas}
@@ -458,15 +497,18 @@ const HorasComplementares: React.FC = () => {
               </>
             )}
 
+            {/* CONTEÚDO DA ABA: HISTÓRICO */}
             {activeTab === "historico" && (
               <HistoricoCertificados certificados={certificados} loading={histLoading} />
             )}
 
+            {/* CONTEÚDO DA ABA: ORIENTAÇÕES */}
             {activeTab === "orientacoes" && <CardOrientacoes />}
           </div>
         </main>
       </div>
 
+      {/* Botão flutuante e modal de Upload de Certificado */}
       <FloatingUploadButton
         file={file}
         cursos={cursos}

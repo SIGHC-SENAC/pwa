@@ -12,6 +12,10 @@ import { Progress } from "@/components/ui/progress";
 import { GRUPOS_ATIVIDADES } from "@/lib/categoriasComplementares";
 import { CertificadoMeta } from "@/services/certificadoService";
 
+/**
+ * Carga horária total exigida pelo curso. 
+ * TODO: Tornar dinâmico vindo das configurações do curso.
+ */
 const TOTAL_HORAS_COMPLEMENTARES = 100;
 
 interface ProgressoHorasProps {
@@ -21,16 +25,24 @@ interface ProgressoHorasProps {
   loading?: boolean;
 }
 
+/**
+ * Componente ProgressoHoras
+ * Renderiza o dashboard de progresso do aluno, com barras de porcentagem e 
+ * detalhamento de horas por grupos (Ensino, Pesquisa, Extensão).
+ */
 const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
   certificados,
   horasAprovadas,
   nomeCurso = "Carregando curso...",
   loading,
 }) => {
+  // Estado para controlar a animação da barra de progresso ao carregar
   const [animatedPercent, setAnimatedPercent] = useState(0);
 
+  // Cálculos básicos de progresso
   const horasRestantes = Math.max(0, TOTAL_HORAS_COMPLEMENTARES - horasAprovadas);
   const percentual = Math.min(100, Math.round((horasAprovadas / TOTAL_HORAS_COMPLEMENTARES) * 100));
+  // Verifica se o aluno já atingiu a meta
   const concluido = horasAprovadas >= TOTAL_HORAS_COMPLEMENTARES;
 
   useEffect(() => {
@@ -39,6 +51,10 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
     return () => clearTimeout(timeout);
   }, [loading, percentual]);
 
+  /**
+   * Cruza os dados das categorias estáticas com os certificados reais do aluno
+   * para calcular subtotais por grupo e atividade.
+   */
   const gruposDetalhados = useMemo(() => {
     return GRUPOS_ATIVIDADES.map((grupo) => {
       const atividades = grupo.atividades.map((atividade) => {
@@ -46,6 +62,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
         const aprovados = relacionados.filter((certificado) => certificado.status === "aprovado");
         const pendentes = relacionados.filter((certificado) => certificado.status === "pendente");
         const rejeitados = relacionados.filter((certificado) => certificado.status === "rejeitado");
+        // Soma apenas as horas que foram validadas pelo admin para esta categoria específica
         const horas = aprovados.reduce(
           (total, certificado) => total + (certificado.horasAprovadas ?? 0),
           0
@@ -62,6 +79,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
         };
       });
 
+      // Totais consolidados do grupo (Ex: Total de Ensino)
       const aprovadasNoGrupo = atividades.reduce((total, atividade) => total + atividade.horasAprovadas, 0);
       const enviosNoGrupo = atividades.reduce((total, atividade) => total + atividade.totalEnvios, 0);
       const pendenciasNoGrupo = atividades.reduce((total, atividade) => total + atividade.pendentes, 0);
@@ -84,6 +102,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
     <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex items-center gap-3 border-b bg-muted/30 px-5 py-3.5 sm:px-6 sm:py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          {/* Ícone indicativo de progresso acadêmico */}
           <GraduationCap className="h-4 w-4 text-primary" />
         </div>
         <div>
@@ -97,6 +116,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
       </div>
 
       <div className="space-y-6 p-4 sm:p-6">
+        {/* CARD DE RESUMO GERAL (TOTALIZADOR) */}
         <div className="rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/5 via-background to-background p-4 sm:p-5">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
@@ -156,6 +176,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
             </div>
           </div>
 
+          {/* Feedback visual de zero horas */}
           {horasAprovadas === 0 && (
             <p className="mt-4 text-xs italic text-muted-foreground">
               Voce ainda nao possui horas aprovadas. Envie seus certificados para comecar.
@@ -172,6 +193,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
           )}
         </div>
 
+        {/* GRID DE RESUMO POR GRUPO (Ensino, Pesquisa, Extensão) */}
         <div className="grid gap-3 md:grid-cols-3">
           {gruposDetalhados.map((grupo) => (
             <div key={grupo.id} className="rounded-xl border bg-background p-4">
@@ -187,6 +209,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
           ))}
         </div>
 
+        {/* DETALHAMENTO POR ATIVIDADE (Lista completa de categorias permitidas) */}
         <div className="space-y-5">
           {gruposDetalhados.map((grupo) => (
             <div key={grupo.id} className="rounded-2xl border bg-background p-4 sm:p-5">

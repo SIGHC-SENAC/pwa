@@ -1,8 +1,13 @@
+// Importações do Firebase
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+/**
+ * Configuração do Firebase
+ * Lê as credenciais do arquivo .env.local (variáveis VITE_*)
+ */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -12,9 +17,14 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Inicializa aplicação Firebase com a configuração fornecida
 const app = initializeApp(firebaseConfig);
 
+// Exporta instância de autenticação do Firebase
 export const auth = getAuth(app);
+// Exporta instância de Firestore (banco de dados)
 export const db = getFirestore(app);
+// Exporta instância de Storage (armazenamento de arquivos)
 export const storage = getStorage(app);
+// Exporta a aplicação Firebase como padrão
 export default app;

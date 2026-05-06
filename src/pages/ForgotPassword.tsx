@@ -1,37 +1,70 @@
+// Importações do React
 import React, { useState } from "react";
+// Importações de roteamento
 import { useNavigate } from "react-router-dom";
+// Importações do Firebase para resetar senha
 import { sendPasswordResetEmail } from "firebase/auth";
+// Importa instância do Firebase Auth
 import { auth } from "@/lib/firebase";
+// Importações de componentes da UI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// Importação da biblioteca de notificações
 import { toast } from "sonner";
+// Importações de ícones
 import { Loader2, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 
+// Caminho da logo SENAC
 const senacLogo = "/senac-logo.png";
 
+/**
+ * Página de Recuperação de Senha
+ * Permite que usuários solicitem link de reset de senha via email
+ */
 const ForgotPassword: React.FC = () => {
+  // Estado para armazenar email informado
   const [email, setEmail] = useState("");
+  // Estado para controlar status de carregamento
   const [loading, setLoading] = useState(false);
+  // Estado para indicar se email foi enviado
   const [sent, setSent] = useState(false);
+  // Hook de navegação
   const navigate = useNavigate();
 
+  /**
+   * Manipulador do submit do formulário
+   * Envia email de reset de senha
+   */
   const handleSubmit = async (e: React.FormEvent) => {
+    // Previne comportamento padrão
     e.preventDefault();
+    
+    // Valida se email foi preenchido
     if (!email) {
       toast.error("Informe seu e-mail.");
       return;
     }
+    
+    // Valida formato do email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error("Informe um e-mail válido.");
       return;
     }
+    
+    // Inicia carregamento
     setLoading(true);
+    
     try {
+      // Envia email de reset de senha
       await sendPasswordResetEmail(auth, email);
+      // Define que email foi enviado
       setSent(true);
     } catch (err: any) {
+      // Log do erro
       console.error("Erro ao enviar e-mail de redefinição:", err);
+      
+      // Trata diferentes tipos de erro
       if (err.code === "auth/too-many-requests") {
         toast.error("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
       } else if (err.code === "auth/invalid-email") {
@@ -41,6 +74,7 @@ const ForgotPassword: React.FC = () => {
         setSent(true);
       }
     } finally {
+      // Finaliza carregamento
       setLoading(false);
     }
   };
@@ -48,7 +82,7 @@ const ForgotPassword: React.FC = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
-        {/* Header */}
+        {/* Header com logo */}
         <div className="flex flex-col items-center gap-4 mb-8">
           <img src={senacLogo} alt="Logo Senac" className="h-20 w-auto" />
           <div className="text-center space-y-1">
@@ -59,9 +93,10 @@ const ForgotPassword: React.FC = () => {
           </div>
         </div>
 
-        {/* Card */}
+        {/* Card principal */}
         <div className="rounded-2xl border bg-card p-8 shadow-lg space-y-6 animate-fade-in">
           {sent ? (
+            // Mensagem de sucesso após envio
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <CheckCircle2 className="h-8 w-8 text-primary" />
@@ -78,6 +113,7 @@ const ForgotPassword: React.FC = () => {
               </Button>
             </div>
           ) : (
+            // Formulário para solicitar reset
             <>
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-bold text-foreground">Recuperar senha</h2>
@@ -135,6 +171,7 @@ const ForgotPassword: React.FC = () => {
           )}
         </div>
 
+        {/* Footer */}
         <p className="mt-8 text-center text-xs text-muted-foreground">
           Faculdade Senac Pernambuco
         </p>
@@ -143,4 +180,5 @@ const ForgotPassword: React.FC = () => {
   );
 };
 
+// Exporta componente ForgotPassword como padrão
 export default ForgotPassword;
