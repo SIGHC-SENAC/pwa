@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Award, Clock, FileCheck, FileX, Loader2, UserX, Users } from "lucide-react";
+import { AlertTriangle, Clock, FileCheck, FileX, Loader2, UserX, Users } from "lucide-react";
 
 interface Props {
   certificados: CertificadoMeta[];
@@ -60,6 +60,8 @@ const tooltipStyle = {
   fontSize: "12px",
 };
 
+const OLD_PENDING_DAYS = 7;
+
 const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds = [] }) => {
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
@@ -93,6 +95,11 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds
     const horasTotal = certificados.reduce((s, c) => s + (c.horasAprovadas || 0), 0);
     const uidsComUpload = new Set(certificados.map((c) => c.uid));
     const semUpload = alunos.filter((a) => !uidsComUpload.has(a.id)).length;
+    const pendenciasAntigas = certificados.filter((c) => {
+      if (c.status !== "pendente" || !c.createdAt?.seconds) return false;
+      const dias = (Date.now() - c.createdAt.seconds * 1000) / (1000 * 60 * 60 * 24);
+      return dias >= OLD_PENDING_DAYS;
+    }).length;
 
     const cursoMap = new Map<string, number>();
     alunos.forEach((a) => {
@@ -107,7 +114,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds
       .map(([curso, total]) => ({ curso, total }))
       .sort((a, b) => b.total - a.total);
 
-    return { aprovados, rejeitados, pendentes, horasTotal, semUpload, cursoAlunos };
+    return { aprovados, rejeitados, pendentes, horasTotal, semUpload, pendenciasAntigas, cursoAlunos };
   }, [certificados, alunos]);
 
   const pieData = useMemo(
@@ -188,11 +195,11 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds
       iconClass: "bg-red-50 text-red-600",
     },
     {
-      label: "Horas Aprovadas",
-      value: `${stats.horasTotal}h`,
-      detail: "carga horária aceita",
-      icon: Award,
-      iconClass: "bg-violet-50 text-violet-600",
+      label: `Pendências há ${OLD_PENDING_DAYS}+ dias`,
+      value: stats.pendenciasAntigas,
+      detail: "certificados pendentes antigos",
+      icon: AlertTriangle,
+      iconClass: "bg-red-50 text-red-600",
     },
     {
       label: "Sem Envio",
