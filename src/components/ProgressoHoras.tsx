@@ -18,6 +18,78 @@ import { CertificadoMeta } from "@/services/certificadoService";
  */
 const TOTAL_HORAS_COMPLEMENTARES = 100;
 
+/**
+ * Cores verdes para o campo "Aprovados" em cada atividade de ensino
+ */
+const CORES_VERDES_APROVADOS: Record<string, { bg: string; border: string }> = {
+  "1.1": { bg: "bg-green-50", border: "border-green-300" },
+  "1.2": { bg: "bg-green-50", border: "border-green-300" },
+  "1.3": { bg: "bg-green-50", border: "border-green-300" },
+  "1.4": { bg: "bg-green-50", border: "border-green-300" },
+  "1.5": { bg: "bg-green-50", border: "border-green-300" },
+  "1.6": { bg: "bg-green-50", border: "border-green-300" },
+  "1.7": { bg: "bg-green-50", border: "border-green-300" },
+  "1.8": { bg: "bg-green-50", border: "border-green-300" },
+  "1.9": { bg: "bg-green-50", border: "border-green-300" },
+  // Pesquisa
+  "2.1": { bg: "bg-green-50", border: "border-green-300" },
+  "2.2": { bg: "bg-green-50", border: "border-green-300" },
+  "2.3": { bg: "bg-green-50", border: "border-green-300" },
+  "2.4": { bg: "bg-green-50", border: "border-green-300" },
+  "2.5": { bg: "bg-green-50", border: "border-green-300" },
+  // Extensão
+  "3.1": { bg: "bg-green-50", border: "border-green-300" },
+  "3.2": { bg: "bg-green-50", border: "border-green-300" },
+  "3.3": { bg: "bg-green-50", border: "border-green-300" },
+  "3.4": { bg: "bg-green-50", border: "border-green-300" },
+  "3.5": { bg: "bg-green-50", border: "border-green-300" },
+  "3.6": { bg: "bg-green-50", border: "border-green-300" },
+  "3.7": { bg: "bg-green-50", border: "border-green-300" },
+};
+
+/**
+ * Cores laranja para o campo "Pendentes" em cada atividade de ensino
+ */
+const CORES_LARANJA_PENDENTES: Record<string, { bg: string; border: string }> = {
+  "1.1": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.2": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.3": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.4": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.5": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.6": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.7": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.8": { bg: "bg-orange-50", border: "border-orange-300" },
+  "1.9": { bg: "bg-orange-50", border: "border-orange-300" },
+  // Pesquisa
+  "2.1": { bg: "bg-orange-50", border: "border-orange-300" },
+  "2.2": { bg: "bg-orange-50", border: "border-orange-300" },
+  "2.3": { bg: "bg-orange-50", border: "border-orange-300" },
+  "2.4": { bg: "bg-orange-50", border: "border-orange-300" },
+  "2.5": { bg: "bg-orange-50", border: "border-orange-300" },
+  // Extensão
+  "3.1": { bg: "bg-orange-50", border: "border-orange-300" },
+  "3.2": { bg: "bg-orange-50", border: "border-orange-300" },
+  "3.3": { bg: "bg-orange-50", border: "border-orange-300" },
+  "3.4": { bg: "bg-orange-50", border: "border-orange-300" },
+  "3.5": { bg: "bg-orange-50", border: "border-orange-300" },
+  "3.6": { bg: "bg-orange-50", border: "border-orange-300" },
+  "3.7": { bg: "bg-orange-50", border: "border-orange-300" },
+};
+
+/**
+ * Obtém a cor verde para o campo Aprovados de uma atividade
+ */
+const obterCorVerde = (atividadeId: string) => {
+  return CORES_VERDES_APROVADOS[atividadeId] || { bg: "bg-background", border: "border-border" };
+};
+
+/**
+ * Obtém a cor laranja para o campo Pendentes de uma atividade
+ */
+const obterCorLaranja = (atividadeId: string) => {
+  return CORES_LARANJA_PENDENTES[atividadeId] || { bg: "bg-background", border: "border-border" };
+};
+
 interface ProgressoHorasProps {
   certificados: CertificadoMeta[];
   horasAprovadas: number;
@@ -110,7 +182,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
             Progresso das Horas Complementares
           </h2>
           <p className="text-xs text-muted-foreground">
-            Acompanhe seu avanco no curso e o detalhamento por atividade
+            Acompanhe seu avanço no curso e o detalhamento por atividade
           </p>
         </div>
       </div>
@@ -179,7 +251,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
           {/* Feedback visual de zero horas */}
           {horasAprovadas === 0 && (
             <p className="mt-4 text-xs italic text-muted-foreground">
-              Voce ainda nao possui horas aprovadas. Envie seus certificados para comecar.
+              Você ainda nao possui horas aprovadas. Envie seus certificados para começar.
             </p>
           )}
 
@@ -187,7 +259,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
               <span className="text-sm font-semibold text-success">
-                Carga horaria complementar concluida!
+                Carga horária complementar concluída!
               </span>
             </div>
           )}
@@ -277,7 +349,9 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
                             {atividade.horasAprovadas}h
                           </p>
                         </div>
-                        <div className="rounded-lg border bg-background p-3">
+                        <div className={`rounded-lg border p-3 ${
+                          `${obterCorVerde(atividade.id).bg} ${obterCorVerde(atividade.id).border}`
+                        }`}>
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                             Aprovados
@@ -286,7 +360,9 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
                             {atividade.aprovados}
                           </p>
                         </div>
-                        <div className="rounded-lg border bg-background p-3">
+                        <div className={`rounded-lg border p-3 ${
+                          `${obterCorLaranja(atividade.id).bg} ${obterCorLaranja(atividade.id).border}`
+                        }`}>
                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                             <Clock3 className="h-3.5 w-3.5 text-secondary" />
                             Pendentes

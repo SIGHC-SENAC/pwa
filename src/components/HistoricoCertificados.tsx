@@ -11,9 +11,9 @@ interface HistoricoCertificadosProps {
 }
 
 const statusConfig = {
-  pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30", icon: Clock },
-  aprovado: { label: "Aprovado", className: "bg-success/15 text-success border-success/30", icon: CheckCircle2 },
-  rejeitado: { label: "Não aprovado", className: "bg-destructive/15 text-destructive border-destructive/30", icon: XCircle },
+  pendente: { label: "Pendente", className: "bg-secondary/15 text-secondary border-secondary/30", icon: Clock, bgColor: "bg-orange-50", borderColor: "border-orange-200" },
+  aprovado: { label: "Aprovado", className: "bg-success/15 text-success border-success/30", icon: CheckCircle2, bgColor: "bg-green-50", borderColor: "border-green-200" },
+  rejeitado: { label: "Não aprovado", className: "bg-destructive/15 text-destructive border-destructive/30", icon: XCircle, bgColor: "bg-red-50", borderColor: "border-red-200" },
 };
 
 function formatDate(ts: { seconds: number } | null): string {
@@ -66,7 +66,7 @@ const HistoricoCertificados: React.FC<HistoricoCertificadosProps> = ({
           <div
             key={cert.id}
             onClick={() => setSelectedCert(cert)}
-            className="animate-fade-in rounded-lg border bg-card p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden cursor-pointer active:scale-[0.99]"
+            className={`animate-fade-in rounded-lg border p-3 sm:p-4 transition-shadow hover:shadow-md overflow-hidden cursor-pointer active:scale-[0.99] ${status.bgColor} ${status.borderColor}`}
           >
             {/* Main row */}
             <div className="flex items-start gap-2.5 sm:gap-3">
