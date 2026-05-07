@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { GRUPOS_ATIVIDADES } from "@/lib/categoriasComplementares";
+import { GRUPOS_ATIVIDADES, type GrupoAtividade } from "@/lib/categoriasComplementares";
 import { CertificadoMeta } from "@/services/certificadoService";
 
 /**
@@ -94,6 +94,8 @@ interface ProgressoHorasProps {
   certificados: CertificadoMeta[];
   horasAprovadas: number;
   nomeCurso?: string;
+  cargaHorariaComplementar?: number;
+  gruposAtividades?: GrupoAtividade[];
   loading?: boolean;
 }
 
@@ -106,16 +108,20 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
   certificados,
   horasAprovadas,
   nomeCurso = "Carregando curso...",
+  cargaHorariaComplementar = TOTAL_HORAS_COMPLEMENTARES,
+  gruposAtividades,
   loading,
 }) => {
   // Estado para controlar a animação da barra de progresso ao carregar
   const [animatedPercent, setAnimatedPercent] = useState(0);
 
   // Cálculos básicos de progresso
-  const horasRestantes = Math.max(0, TOTAL_HORAS_COMPLEMENTARES - horasAprovadas);
-  const percentual = Math.min(100, Math.round((horasAprovadas / TOTAL_HORAS_COMPLEMENTARES) * 100));
+  const metaHoras = cargaHorariaComplementar || TOTAL_HORAS_COMPLEMENTARES;
+  const gruposBase = gruposAtividades?.length ? gruposAtividades : GRUPOS_ATIVIDADES;
+  const horasRestantes = Math.max(0, metaHoras - horasAprovadas);
+  const percentual = Math.min(100, Math.round((horasAprovadas / metaHoras) * 100));
   // Verifica se o aluno já atingiu a meta
-  const concluido = horasAprovadas >= TOTAL_HORAS_COMPLEMENTARES;
+  const concluido = horasAprovadas >= metaHoras;
 
   useEffect(() => {
     if (loading) return;
@@ -128,7 +134,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
    * para calcular subtotais por grupo e atividade.
    */
   const gruposDetalhados = useMemo(() => {
-    return GRUPOS_ATIVIDADES.map((grupo) => {
+    return gruposBase.map((grupo) => {
       const atividades = grupo.atividades.map((atividade) => {
         const relacionados = certificados.filter((certificado) => certificado.categoriaId === atividade.id);
         const aprovados = relacionados.filter((certificado) => certificado.status === "aprovado");
@@ -164,7 +170,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
         atividades,
       };
     });
-  }, [certificados]);
+  }, [certificados, gruposBase]);
 
   if (loading) {
     return <div className="h-[720px] animate-pulse rounded-xl bg-muted" />;
@@ -202,7 +208,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                 <span className="text-muted-foreground">
                   <span className="font-bold text-foreground">{horasAprovadas}h</span> de{" "}
-                  <span className="font-bold text-foreground">{TOTAL_HORAS_COMPLEMENTARES}h</span> concluidas
+                  <span className="font-bold text-foreground">{metaHoras}h</span> concluidas
                 </span>
                 {!concluido && (
                   <span className="text-muted-foreground">
@@ -225,7 +231,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
                   <Award className="h-3.5 w-3.5 text-primary" />
                   Meta do curso
                 </div>
-                <p className="mt-2 text-2xl font-bold text-foreground">{TOTAL_HORAS_COMPLEMENTARES}h</p>
+                <p className="mt-2 text-2xl font-bold text-foreground">{metaHoras}h</p>
               </div>
             </div>
           </div>
@@ -243,7 +249,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
               </span>
               <span className="flex items-center gap-1">
                 <Target className="h-3 w-3" />
-                Meta do curso: {TOTAL_HORAS_COMPLEMENTARES}h
+                Meta do curso: {metaHoras}h
               </span>
             </div>
           </div>
@@ -259,7 +265,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
               <span className="text-sm font-semibold text-success">
-                Carga horária complementar concluída!
+                Aluno apto a colar grau.
               </span>
             </div>
           )}
@@ -332,7 +338,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
                           {atividade.descricao}
                         </h4>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Aproveitamento maximo: {atividade.aproveitamentoMaximo}
+                          Aproveitamento maximo: {atividade.horasMaximas || 0}h ({atividade.aproveitamentoMaximo})
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           Requisito: {atividade.requisito}

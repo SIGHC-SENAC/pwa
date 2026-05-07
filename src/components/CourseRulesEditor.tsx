@@ -27,7 +27,21 @@ interface Props {
 }
 
 function cloneRegras(curso: Curso): GrupoAtividade[] {
-  return JSON.parse(JSON.stringify(curso.regrasAtividades?.length ? curso.regrasAtividades : GRUPOS_ATIVIDADES));
+  const regras = JSON.parse(JSON.stringify(curso.regrasAtividades?.length ? curso.regrasAtividades : GRUPOS_ATIVIDADES)) as GrupoAtividade[];
+  return regras.map((grupo) => ({
+    ...grupo,
+    atividades: grupo.atividades.map((atividade) => {
+      const horasTexto = String(atividade.aproveitamentoMaximo || "").match(/\d+/)?.[0];
+      const horasMaximas = Number.isInteger(atividade.horasMaximas)
+        ? atividade.horasMaximas
+        : Number(horasTexto || 0);
+      return {
+        ...atividade,
+        horasMaximas,
+        aproveitamentoMaximo: atividade.aproveitamentoMaximo || `${horasMaximas}h`,
+      };
+    }),
+  }));
 }
 
 function nextCategoriaCode(grupos: GrupoAtividade[]) {
@@ -97,7 +111,8 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
       const novoItem = {
         id,
         descricao: "",
-        aproveitamentoMaximo: "",
+        horasMaximas: 1,
+        aproveitamentoMaximo: "1h",
         requisito: "",
         grupo: grupo.tipo || grupo.id,
       };
@@ -120,10 +135,19 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
     }
   };
 
-  const updateItem = (grupoId: string, itemId: string, field: "descricao" | "aproveitamentoMaximo" | "requisito", value: string) => {
+  const updateItem = (grupoId: string, itemId: string, field: "descricao" | "horasMaximas" | "requisito", value: string) => {
+    const parsedHoras = Number(value);
+    const horasMaximas = Number.isFinite(parsedHoras) ? Math.max(0, Math.trunc(parsedHoras)) : 0;
+    const patch = field === "horasMaximas"
+      ? {
+          horasMaximas,
+          aproveitamentoMaximo: `${horasMaximas}h`,
+        }
+      : { [field]: value };
+
     setEditingItem((current) =>
       current?.grupoId === grupoId && current.item.id === itemId
-        ? { ...current, item: { ...current.item, [field]: value } }
+        ? { ...current, item: { ...current.item, ...patch } }
         : current
     );
     setGrupos((current) => current.map((grupo) => {
@@ -131,7 +155,7 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
       return {
         ...grupo,
         atividades: grupo.atividades.map((atividade) =>
-          atividade.id === itemId ? { ...atividade, [field]: value } : atividade
+          atividade.id === itemId ? { ...atividade, ...patch } : atividade
         ),
       };
     }));
@@ -144,12 +168,13 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
   const handleSave = async () => {
     if (!curso.id) return;
     const hasInvalid = grupos.some((grupo) =>
-      !grupo.label.trim() ||
-      grupo.atividades.some((atividade) =>
-        !atividade.descricao.trim() ||
-        !atividade.aproveitamentoMaximo.trim() ||
-        !atividade.requisito.trim()
-      )
+        !grupo.label.trim() ||
+        grupo.atividades.some((atividade) =>
+          !atividade.descricao.trim() ||
+          !Number.isInteger(atividade.horasMaximas) ||
+          atividade.horasMaximas <= 0 ||
+          !atividade.requisito.trim()
+        )
     );
     if (hasInvalid) {
       toast.error("Preencha categoria, atividade, horas maximas e comprovacao exigida.");
@@ -182,6 +207,9 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
               <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
                 <Badge variant="outline">{grupo.atividades[0]?.id?.split(".")[0] || grupo.id}</Badge>
                 <span className="truncate">{grupo.label}</span>
+                <Badge variant="secondary" className="ml-auto shrink-0">
+                  {grupo.atividades.reduce((total, atividade) => total + (atividade.horasMaximas || 0), 0)}h
+                </Badge>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
@@ -215,7 +243,7 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
                           {atividade.descricao || "Item sem descricao"}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {atividade.aproveitamentoMaximo || "Horas nao informadas"} - {atividade.requisito || "Comprovacao nao informada"}
+                          {atividade.horasMaximas || 0}h max. - {atividade.requisito || "Comprovacao nao informada"}
                         </p>
                       </div>
                     </button>
@@ -310,9 +338,12 @@ const CourseRulesEditor: React.FC<Props> = ({ curso, onSaved }) => {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground">Horas maximas</label>
                   <Input
-                    value={editingItem.item.aproveitamentoMaximo}
-                    onChange={(event) => updateItem(editingItem.grupoId, editingItem.item.id, "aproveitamentoMaximo", event.target.value)}
-                    placeholder="Ex: 10h por curso"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={editingItem.item.horasMaximas || ""}
+                    onChange={(event) => updateItem(editingItem.grupoId, editingItem.item.id, "horasMaximas", event.target.value)}
+                    placeholder="Ex: 10"
                   />
                 </div>
                 <div className="space-y-1.5">

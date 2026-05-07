@@ -82,7 +82,7 @@ export async function createAdmin(payload: { nome: string; email: string; cursoI
  * @param payload - Objeto com dados a atualizar
  * @returns Dados do admin atualizado
  */
-export async function updateAdmin(id: string, payload: { nome?: string; email?: string; cursoId?: string; cursoIds?: string[] }): Promise<any> {
+export async function updateAdmin(id: string, payload: { nome?: string; cursoId?: string; cursoIds?: string[] }): Promise<any> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins/${id}`, {
     method: "PUT",

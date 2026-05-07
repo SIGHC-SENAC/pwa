@@ -72,9 +72,14 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
 
   const resumo = useMemo(() => {
     const totalAtividades = gruposAtividades.reduce((total, grupo) => total + grupo.atividades.length, 0);
+    const totalHorasCategorias = gruposAtividades.reduce(
+      (total, grupo) => total + grupo.atividades.reduce((grupoTotal, atividade) => grupoTotal + (atividade.horasMaximas || 0), 0),
+      0
+    );
     return {
       totalGrupos: gruposAtividades.length,
       totalAtividades,
+      totalHorasCategorias,
       cargaHoraria: selectedCurso?.cargaHorariaComplementar || 0,
     };
   }, [gruposAtividades, selectedCurso?.cargaHorariaComplementar]);
@@ -148,6 +153,7 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
               <FileCheck2 className="h-5 w-5 text-primary" />
               <p className="mt-3 text-xs font-medium uppercase text-muted-foreground">Atividades</p>
               <p className="mt-1 text-2xl font-bold text-foreground">{resumo.totalAtividades}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{resumo.totalHorasCategorias}h em limites</p>
             </div>
           </div>
         </div>
@@ -183,7 +189,10 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
                       <TableRow key={atividade.id}>
                         <TableCell><Badge variant="outline">{atividade.id}</Badge></TableCell>
                         <TableCell className="font-medium text-foreground">{atividade.descricao}</TableCell>
-                        <TableCell className="text-sm text-foreground">{atividade.aproveitamentoMaximo}</TableCell>
+                        <TableCell className="text-sm text-foreground">
+                          {atividade.horasMaximas || 0}h
+                          <span className="block text-xs text-muted-foreground">{atividade.aproveitamentoMaximo}</span>
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{atividade.requisito}</TableCell>
                       </TableRow>
                     ))}

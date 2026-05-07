@@ -122,9 +122,7 @@ const AdminAddAluno: React.FC = () => {
    */
   const toggleCurso = (id?: string) => {
     if (!id) return;
-    setCursoIds((current) =>
-      current.includes(id) ? current.filter((cursoId) => cursoId !== id) : [...current, id]
-    );
+    setCursoIds((current) => (current.includes(id) ? [] : [id]));
   };
 
   /**
@@ -182,7 +180,7 @@ const AdminAddAluno: React.FC = () => {
             Cadastrar Aluno
           </h2>
           <p className="text-sm text-muted-foreground">
-            Adicione ou vincule um aluno a um ou mais cursos.
+            Adicione ou vincule um aluno a um curso.
           </p>
         </div>
 
@@ -200,7 +198,7 @@ const AdminAddAluno: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Cursos</label>
+                <label className="text-sm font-medium text-foreground">Curso</label>
                 {loadingCursos ? (
                   <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -223,7 +221,7 @@ const AdminAddAluno: React.FC = () => {
                 )}
                 {selectedCurso && (
                   <p className="text-xs text-muted-foreground">
-                    A turma sera vinculada ao primeiro curso selecionado: {selectedCurso.nome}
+                    A turma sera vinculada ao curso selecionado: {selectedCurso.nome}
                   </p>
                 )}
               </div>
@@ -237,7 +235,7 @@ const AdminAddAluno: React.FC = () => {
                       Carregando turmas...
                     </div>
                   ) : turmas.length === 0 ? (
-                    <p className="py-2 text-sm text-muted-foreground">Nenhuma turma cadastrada para o primeiro curso selecionado.</p>
+                    <p className="py-2 text-sm text-muted-foreground">Nenhuma turma cadastrada para o curso selecionado.</p>
                   ) : (
                     <Select value={turmaId} onValueChange={setTurmaId}>
                       <SelectTrigger>

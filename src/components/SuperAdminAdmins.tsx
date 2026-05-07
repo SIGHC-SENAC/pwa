@@ -122,7 +122,7 @@ const SuperAdminAdmins: React.FC = () => {
     setSaving(true);
     try {
       if (editing) {
-        await updateAdmin(editing.id, { nome: nome.trim(), email: email.trim(), cursoIds });
+        await updateAdmin(editing.id, { nome: nome.trim(), cursoIds });
         toast.success("Coordenador atualizado.");
       } else {
         await createAdmin({ nome: nome.trim(), email: email.trim(), cursoIds });
@@ -243,7 +243,18 @@ const SuperAdminAdmins: React.FC = () => {
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">E-mail</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ex: joao@exemplo.com" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Ex: joao@exemplo.com"
+                disabled={!!editing}
+              />
+              {editing && (
+                <p className="text-xs text-muted-foreground">
+                  O e-mail do coordenador nao pode ser alterado apos o cadastro.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Cursos</label>

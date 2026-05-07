@@ -271,7 +271,7 @@ const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, certificados, open, onOp
                                   </div>
                                   <p className="mt-3 text-sm font-semibold text-foreground">{atividade.descricao}</p>
                                   <p className="mt-1 text-xs text-muted-foreground">
-                                    Maximo: {atividade.aproveitamentoMaximo}
+                                    Maximo: {atividade.horasMaximas || 0}h ({atividade.aproveitamentoMaximo})
                                   </p>
                                   <p className="mt-1 text-xs text-muted-foreground">
                                     Requisito: {atividade.requisito}

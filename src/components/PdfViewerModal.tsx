@@ -155,11 +155,18 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const status = statusConfig[cert.status] || statusConfig.pendente;
   const isPendente = cert.status === "pendente";
   const categoriaChanged = categoriaId !== (cert.categoriaId || "");
+  const categoriaSelecionada = categoriaId
+    ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId)
+    : undefined;
 
   const handleAprovar = async () => {
-    const h = parseFloat(horas);
-    if (!horas || isNaN(h) || h <= 0) {
+    const h = Number(horas);
+    if (!horas || !Number.isInteger(h) || h <= 0) {
       toast.error("Informe um número válido de horas.");
+      return;
+    }
+    if (categoriaSelecionada?.horasMaximas && h > categoriaSelecionada.horasMaximas) {
+      toast.error(`O limite desta atividade e ${categoriaSelecionada.horasMaximas}h.`);
       return;
     }
     setActionLoading("aprovar");
@@ -336,14 +343,20 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           <label className="text-sm font-medium text-foreground">Horas aprovadas</label>
           <Input
             type="number"
-            min="0"
-            step="0.5"
+            min="1"
+            step="1"
+            max={categoriaSelecionada?.horasMaximas}
             value={horas}
             onChange={(e) => setHoras(e.target.value)}
             placeholder="Ex: 20"
             className="mt-1"
             disabled={!isPendente || actionLoading !== null}
           />
+          {categoriaSelecionada?.horasMaximas ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Limite da atividade: {categoriaSelecionada.horasMaximas}h
+            </p>
+          ) : null}
         </div>
 
         <div>

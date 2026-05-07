@@ -492,6 +492,8 @@ const HorasComplementares: React.FC = () => {
                   certificados={certificadosDoCurso}
                   horasAprovadas={horasAprovadas}
                   nomeCurso={curso?.nome}
+                  cargaHorariaComplementar={curso?.cargaHorariaComplementar}
+                  gruposAtividades={curso?.regrasAtividades}
                   loading={histLoading}
                 />
               </>

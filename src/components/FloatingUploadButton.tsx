@@ -188,7 +188,7 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
               <Info className="mt-px h-3.5 w-3.5 shrink-0 text-primary" />
               <span>
                 <span className="font-medium text-foreground">Máx.:</span>{" "}
-                {categoriaInfo.aproveitamentoMaximo}
+                {categoriaInfo.horasMaximas || 0}h ({categoriaInfo.aproveitamentoMaximo})
               </span>
             </p>
             <p className="flex items-start gap-1.5">
