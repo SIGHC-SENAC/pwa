@@ -139,7 +139,7 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds, certificados 
         <CardHeader>
           <CardTitle className="text-lg">Curso nao vinculado</CardTitle>
           <CardDescription>
-            Este usuario nao possui um curso associado para listar alunos.
+            Este usuario não possui um curso associado para listar alunos.
           </CardDescription>
         </CardHeader>
       </Card>

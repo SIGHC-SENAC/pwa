@@ -6,7 +6,7 @@ const orientacoes = [
   "O arquivo deve estar em formato PDF",
   "Envie um certificado por vez",
   "Tamanho máximo: 10 MB por arquivo",
-  "O documento será analisado posteriormente pela coordenação",
+  "O documento será analisado posteriormente pela Coordenação",
 ];
 
 const CardOrientacoes: React.FC = () => {

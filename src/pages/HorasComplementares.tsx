@@ -51,13 +51,13 @@ const navItems: { id: Tab; label: string; icon: React.ElementType; description: 
   },
   {
     id: "historico",
-    label: "Historico",
+    label: "Histórico",
     icon: History,
     description: "Seus certificados enviados",
   },
   {
     id: "orientacoes",
-    label: "Orientacoes",
+    label: "Orientacões",
     icon: BookOpen,
     description: "Como funciona o sistema",
   },
@@ -468,7 +468,7 @@ const HorasComplementares: React.FC = () => {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-xl font-bold sm:text-2xl">
-                        Ola, {displayName.split(" ")[0]}!
+                        Olá, {displayName.split(" ")[0]}!
                       </h2>
                       <p className="mt-1 text-sm text-primary-foreground/80">
                         Veja seu dashboard com o progresso das horas complementares
