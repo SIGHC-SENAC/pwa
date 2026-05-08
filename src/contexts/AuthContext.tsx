@@ -6,6 +6,7 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 // Importa instâncias do Firebase
 import { auth, db } from "@/lib/firebase";
+import { requestPermissionAndGetToken } from "@/services/fcmService";
 
 /**
  * Interface que define a estrutura dos dados do usuário no banco de dados
@@ -143,6 +144,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Retorna função para desinscrever do listener
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid || !userData?.role) return;
+
+    requestPermissionAndGetToken(user.uid).catch(() => {});
+  }, [user?.uid, userData?.role]);
 
   /**
    * Calcula se o usuário é aluno

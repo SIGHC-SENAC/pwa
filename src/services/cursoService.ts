@@ -71,6 +71,8 @@ export interface AlunoPayload {
   cursoIds?: string[];
   // ID da turma do aluno
   turmaId?: string;
+  // IDs das turmas do aluno, uma por curso quando houver multiplos cursos
+  turmaIds?: string[];
 }
 
 // ── Cursos CRUD (Create, Read, Update, Delete) ──
@@ -158,6 +160,19 @@ export interface Aluno {
   turmaId?: string;
   // Nome da turma
   turmaNome?: string;
+  // IDs das turmas vinculadas ao aluno
+  turmaIds?: string[];
+  // Turmas vinculadas ao aluno, com informacoes do curso correspondente
+  turmas?: Array<{
+    id: string;
+    nome: string;
+    cursoId?: string;
+    cursoNome?: string;
+    cursoCodigo?: string;
+    horario?: string;
+    periodoInicio?: string;
+    periodoFinal?: string;
+  }>;
   // Timestamp de criação
   createdAt?: number;
 }
@@ -193,4 +208,41 @@ export async function createAluno(payload: AlunoPayload): Promise<any> {
     throw new Error(data.message || "Erro ao cadastrar aluno");
   }
   return res.json();
+}
+
+/**
+ * Atualiza um aluno existente
+ * @param id - ID do aluno a atualizar
+ * @param payload - Dados atualizados do aluno
+ * @returns Dados atualizados do aluno
+ */
+export async function updateAluno(id: string, payload: AlunoPayload): Promise<Aluno> {
+  const headers = await getAuthHeaders();
+  const cursoId = payload.cursoId || payload.cursoIds?.[0];
+  const res = await fetch(`${API_BASE}/alunos/${id}`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({ ...payload, cursoId }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Erro ao atualizar aluno");
+  }
+  return res.json();
+}
+
+/**
+ * Deleta um aluno
+ * @param id - ID do aluno a deletar
+ */
+export async function deleteAluno(id: string): Promise<void> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/alunos/${id}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || "Erro ao excluir aluno");
+  }
 }

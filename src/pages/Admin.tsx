@@ -62,10 +62,13 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import NotificationBell from "@/components/NotificationBell";
 
+// Logo exibido no cabecalho do painel administrativo.
 const senacLogo = "/senac-logo.png";
 
+// Secoes principais que o admin pode acessar pelo menu.
 type Section = "dashboard" | "certificados" | "alunos" | "curso";
 
+// Configuracao dos itens do menu lateral e do titulo de cada secao.
 const navItems: { id: Section; label: string; icon: React.ElementType; description: string }[] = [
   { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, description: "Visão geral das horas complementares" },
   { id: "certificados", label: "Certificados", icon: ClipboardList,   description: "Análise de horas complementares" },
@@ -73,12 +76,14 @@ const navItems: { id: Section; label: string; icon: React.ElementType; descripti
   { id: "curso",        label: "Cursos",       icon: BookOpen,        description: "Cursos vinculados, categorias e limites de horas" },
 ];
 
+// Define texto e cores dos badges para cada status de certificado.
 const statusConfig: Record<string, { label: string; className: string }> = {
   pendente:  { label: "Pendente",  className: "bg-secondary/15 text-secondary border-secondary/30" },
   aprovado:  { label: "Aprovado",  className: "bg-success/15 text-success border-success/30" },
   rejeitado: { label: "Rejeitado", className: "bg-destructive/15 text-destructive border-destructive/30" },
 };
 
+// Formata timestamp do Firestore para uma data curta em portugues.
 function formatDate(ts: { seconds: number } | null): string {
   if (!ts) return "—";
   return new Date(ts.seconds * 1000).toLocaleDateString("pt-BR", {
@@ -86,16 +91,22 @@ function formatDate(ts: { seconds: number } | null): string {
   });
 }
 
+// Numero de linhas exibidas por pagina na listagem de certificados.
 const ITEMS_PER_PAGE = 15;
 
+// Componente principal do painel administrativo.
 const Admin: React.FC = () => {
+  // Autenticacao, navegacao e leitura de parametros da URL.
   const { user, userData, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Controle de permissao e responsividade da interface.
   const isAdmin = userData?.role === "admin" || userData?.role === "superAdmin";
   const isMobile = useIsMobile();
 
+  // Estados principais da pagina: secao ativa, dados, modal e menu mobile.
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,13 +114,14 @@ const Admin: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Filters
+  // Filtros, ordenacao, paginacao e filtro focado em um aluno.
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [sortOrder, setSortOrder] = useState("recente");
   const [currentPage, setCurrentPage] = useState(1);
   const [alunoView, setAlunoView] = useState<string | null>(null);
 
+  // Carrega os certificados exibidos no painel.
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -123,23 +135,29 @@ const Admin: React.FC = () => {
     }
   }, []);
 
+  // Redireciona para login quando a sessao nao existe.
   useEffect(() => {
     if (!authLoading && !user) {
       const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
       navigate(`/login?redirect=${redirect}`);
     }
   }, [authLoading, location.pathname, location.search, navigate, user]);
+
+  // Busca dados assim que o usuario autenticado tiver permissao administrativa.
   useEffect(() => { if (user && isAdmin) loadData(); }, [user, isAdmin, loadData]);
 
+  // Lista de cursos sob responsabilidade do admin/coordenador.
   const cursoIdsAdmin = useMemo(() => {
     return userData?.cursoIds?.length ? userData.cursoIds : userData?.cursoId ? [userData.cursoId] : [];
   }, [userData?.cursoId, userData?.cursoIds]);
 
+  // Super admin ve todos; admin comum ve somente certificados dos seus cursos.
   const certificadosVisiveis = useMemo(() => {
     if (userData?.role === "superAdmin" || cursoIdsAdmin.length === 0) return certificados;
     return certificados.filter((certificado) => !certificado.cursoId || cursoIdsAdmin.includes(certificado.cursoId));
   }, [certificados, cursoIdsAdmin, userData?.role]);
 
+  // Fecha o modal de certificado e limpa o parametro certificadoId da URL.
   const closeCertificadoModal = useCallback(() => {
     setModalOpen(false);
     setSelectedCert(null);
@@ -150,6 +168,7 @@ const Admin: React.FC = () => {
     }, { replace: true });
   }, [setSearchParams]);
 
+  // Permite abrir diretamente um certificado por link com ?certificadoId=...
   useEffect(() => {
     const certificadoId = searchParams.get("certificadoId");
     if (!certificadoId || loading || !isAdmin) return;
@@ -162,18 +181,21 @@ const Admin: React.FC = () => {
     setModalOpen(true);
   }, [certificadosVisiveis, isAdmin, loading, searchParams]);
 
+  // Aprova certificado, dispara feedback ao aluno pelo service e recarrega os dados.
   const handleAprovar = async (certId: string, horas: number, obs: string) => {
     if (!user || !userData) return;
     await aprovarCertificado(certId, user.uid, userData.nome || user.displayName || "Admin", horas, obs);
     await loadData();
   };
 
+  // Rejeita certificado, dispara feedback ao aluno pelo service e recarrega os dados.
   const handleRejeitar = async (certId: string, motivo: string, obs: string) => {
     if (!user || !userData) return;
     await rejeitarCertificado(certId, user.uid, userData.nome || user.displayName || "Admin", motivo, obs);
     await loadData();
   };
 
+  // Atualiza a categoria do certificado sem fechar o modal de detalhes.
   const handleAtualizarCategoria = async (certId: string, categoriaId: string | null, categoriaNome: string | null) => {
     await atualizarCategoriaCertificado(certId, categoriaId, categoriaNome);
     setSelectedCert((current) =>
@@ -182,6 +204,7 @@ const Admin: React.FC = () => {
     await loadData();
   };
 
+  // Totais usados nas abas de status e nos graficos do dashboard.
   const stats = useMemo(() => {
     const total     = certificadosVisiveis.length;
     const pendentes = certificadosVisiveis.filter((c) => c.status === "pendente").length;
@@ -191,6 +214,7 @@ const Admin: React.FC = () => {
     return { total, pendentes, aprovados, rejeitados, horasTotal };
   }, [certificadosVisiveis]);
 
+  // Consolida dados por aluno para exibir o banner quando um aluno e filtrado.
   const alunosSummary = useMemo(() => {
     const map = new Map<string, { nome: string; email: string; total: number; aprovados: number; rejeitados: number; pendentes: number; horas: number }>();
     certificadosVisiveis.forEach((c) => {
@@ -204,6 +228,7 @@ const Admin: React.FC = () => {
     return map;
   }, [certificadosVisiveis]);
 
+  // Aplica filtros de aluno, status, busca textual e ordenacao.
   const filtered = useMemo(() => {
     let r = [...certificadosVisiveis];
     if (alunoView) r = r.filter((c) => c.uid === alunoView);
@@ -222,10 +247,14 @@ const Admin: React.FC = () => {
     return r;
   }, [certificadosVisiveis, statusFilter, searchTerm, sortOrder, alunoView]);
 
+  // Dados da pagina atual da tabela.
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // Volta para a primeira pagina sempre que o resultado filtrado muda.
   useEffect(() => { setCurrentPage(1); }, [statusFilter, searchTerm, sortOrder, alunoView]);
 
+  // Tela de carregamento enquanto autentica ou busca dados do usuario.
   if (authLoading || (user && !userData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -234,8 +263,10 @@ const Admin: React.FC = () => {
     );
   }
 
+  // Evita renderizacao quando o redirecionamento de login ja foi iniciado.
   if (!user) return null;
 
+  // Bloqueia acesso para usuarios sem papel administrativo.
   if (!isAdmin) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4">
@@ -249,9 +280,11 @@ const Admin: React.FC = () => {
     );
   }
 
+  // Nome, iniciais e item ativo usados no cabecalho da interface.
   const displayName = userData?.nome || user.displayName || "Admin";
   const initials = displayName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
   const activeItem = navItems.find((n) => n.id === activeSection)!;
+  // Menu compartilhado entre a sidebar desktop e o menu lateral mobile.
   const renderSidebarContent = (isMobileSidebar = false) => (
     <>
       <div className="px-4 pt-5 pb-2">
@@ -260,6 +293,7 @@ const Admin: React.FC = () => {
 
       <nav className="flex flex-col gap-0.5 px-2 flex-1">
         {navItems.map(({ id, label, icon: Icon }) => {
+          // Identifica se este item corresponde a secao atualmente aberta.
           const isActive = activeSection === id;
           return (
             <button
@@ -306,7 +340,7 @@ const Admin: React.FC = () => {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
 
-      {/* ── Header ── */}
+      {/* Header fixo com menu mobile, marca, notificacoes e dados do usuario. */}
       <header className="sticky top-0 z-40 border-b bg-card shadow-sm shrink-0">
         <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -356,17 +390,17 @@ const Admin: React.FC = () => {
         <div className="h-0.5 bg-gradient-to-r from-primary via-primary to-secondary" />
       </header>
 
-      {/* ── Body ── */}
+      {/* Corpo da tela: sidebar + area principal. */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Sidebar (desktop) ── */}
+        {/* Sidebar fixa exibida em desktop. */}
         <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-card overflow-y-auto">
           {renderSidebarContent()}
         </aside>
 
-        {/* ── Main content ── */}
+        {/* Conteudo principal, trocado conforme a secao ativa. */}
         <main className="flex-1 min-w-0 overflow-y-auto bg-[#F8FAFC]">
-          {/* Sticky page heading */}
+          {/* Cabecalho interno que mostra icone, titulo e descricao da secao atual. */}
           <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[#F8FAFC]/95 px-5 py-4 backdrop-blur-sm sm:px-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-center gap-3">
@@ -388,21 +422,22 @@ const Admin: React.FC = () => {
 
           <div className="space-y-5 px-4 py-5 pb-8 sm:px-8 sm:py-6">
 
-            {/* ── Dashboard ── */}
+            {/* Dashboard com graficos e indicadores dos certificados visiveis. */}
             {activeSection === "dashboard" && (
               <AdminDashboardCharts certificados={certificadosVisiveis} loading={loading} cursoIds={cursoIdsAdmin} />
             )}
             {activeSection === "alunos" && (
               <AdminAlunosPorTurma cursoIds={cursoIdsAdmin} certificados={certificadosVisiveis} />
             )}
+            {/* Dados do curso administrado, categorias e regras de horas complementares. */}
             {activeSection === "curso" && (
               <AdminCursoInfo cursoId={userData?.cursoId} cursoIds={cursoIdsAdmin} />
             )}
 
-            {/* ── Certificados ── */}
+            {/* Area de certificados: filtros, abas de status, tabela e paginacao. */}
             {activeSection === "certificados" && (<>
 
-              {/* Aluno view banner */}
+              {/* Banner exibido quando a tabela esta filtrada para um aluno especifico. */}
               {alunoView && (() => {
                 const al = alunosSummary.get(alunoView);
                 return al ? (
@@ -417,7 +452,7 @@ const Admin: React.FC = () => {
                 ) : null;
               })()}
 
-              {/* Filters */}
+              {/* Filtros de busca textual e ordenacao da lista. */}
               <div className="rounded-xl border bg-card p-3 sm:p-4 shadow-sm">
                 <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center">
                   <div className="relative flex-1">
@@ -435,7 +470,7 @@ const Admin: React.FC = () => {
                 </div>
               </div>
 
-              {/* Status tabs */}
+              {/* Abas de status para filtrar rapidamente pendentes, aprovados e rejeitados. */}
               <Tabs value={statusFilter} onValueChange={setStatusFilter}>
                 <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
                   <TabsTrigger value="todos"     className="text-xs sm:text-sm">Todos ({stats.total})</TabsTrigger>
@@ -445,7 +480,7 @@ const Admin: React.FC = () => {
                 </TabsList>
               </Tabs>
 
-              {/* Table */}
+              {/* Tabela/lista responsiva de certificados filtrados. */}
               <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
@@ -458,6 +493,7 @@ const Admin: React.FC = () => {
                     <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos envios</p>
                   </div>
                 ) : (<>
+                  {/* Versao mobile: cards empilhados com as informacoes principais. */}
                   {isMobile ? (
                     <div className="divide-y">
                       {paginated.map((cert) => {
@@ -490,6 +526,7 @@ const Admin: React.FC = () => {
                       })}
                     </div>
                   ) : (
+                    /* Versao desktop: tabela completa com colunas e acoes. */
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
@@ -535,6 +572,7 @@ const Admin: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Controles de paginacao exibidos apenas quando ha mais de uma pagina. */}
                   {totalPages > 1 && (
                     <div className="flex items-center justify-between border-t px-3 py-2.5 sm:px-4 sm:py-3">
                       <p className="text-xs sm:text-sm text-muted-foreground">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
@@ -556,6 +594,7 @@ const Admin: React.FC = () => {
         </main>
       </div>
 
+      {/* Modal usado para visualizar o PDF e aprovar/rejeitar/reclassificar o certificado. */}
       <PdfViewerModal
         cert={selectedCert}
         open={modalOpen}
