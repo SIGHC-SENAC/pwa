@@ -4,13 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import HorasComplementares from "./pages/HorasComplementares";
-import Admin from "./pages/Admin";
-import SuperAdmin from "./pages/SuperAdmin";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import FirstAccess from "./pages/FirstAccess";
-import NotFound from "./pages/NotFound";
+import DeveloperPortal from "./pages/DeveloperPortal";
 
 const queryClient = new QueryClient();
 
@@ -22,13 +16,9 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<HorasComplementares />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/super-admin" element={<SuperAdmin />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/first-access" element={<FirstAccess />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/" element={<DeveloperPortal />} />
+            <Route path="/login" element={<DeveloperPortal />} />
+            <Route path="*" element={<DeveloperPortal />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "target": "developer-sighc",
     "public": "dist",
     "ignore": [
       "firebase.json",

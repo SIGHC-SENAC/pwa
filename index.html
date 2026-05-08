@@ -3,28 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Horas Complementares - SENAC</title>
-    <meta name="description" content="Sistema de envio e gestão de certificados de horas complementares">
-    <meta name="author" content="SENAC" />
-    <meta name="theme-color" content="#1e3a5f" />
+    <title>Developer SIGHC</title>
+    <meta name="description" content="Portal técnico para consulta das requisições HTTP das Functions do SIGHC">
+    <meta name="author" content="SIGHC" />
+    <meta name="theme-color" content="#0f0f10" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Horas SENAC" />
-    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <meta name="apple-mobile-web-app-title" content="Developer SIGHC" />
     <link rel="icon" href="/favicon.png" type="image/png" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Horas Complementares - SENAC">
-    <meta property="og:description" content="Sistema de envio e gestão de certificados de horas complementares">
+    <meta property="og:title" content="Developer SIGHC">
+    <meta property="og:description" content="Portal técnico para consulta das requisições HTTP das Functions do SIGHC">
     <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a3dfc681-3d77-4b77-be10-e4c54f8bcae8/id-preview-8f5d5579--6e66c4ed-2061-4286-964c-d95e0a68a8e0.lovable.app-1773168262287.png">
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Horas Complementares - SENAC">
-    <meta name="twitter:description" content="Sistema de envio e gestão de certificados de horas complementares">
+    <meta name="twitter:title" content="Developer SIGHC">
+    <meta name="twitter:description" content="Portal técnico para consulta das requisições HTTP das Functions do SIGHC">
     <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a3dfc681-3d77-4b77-be10-e4c54f8bcae8/id-preview-8f5d5579--6e66c4ed-2061-4286-964c-d95e0a68a8e0.lovable.app-1773168262287.png">
   </head>
 
   <body>
     <div id="root"></div>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", async () => {
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((registration) => registration.unregister()));
+
+            if ("caches" in window) {
+              const cacheNames = await caches.keys();
+              await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+            }
+          } catch (error) {
+            console.warn("Não foi possível limpar o service worker antigo.", error);
+          }
+        });
+      }
+    </script>
     <div vw class="enabled">
       <div vw-access-button class="active"></div>
       <div vw-plugin-wrapper>

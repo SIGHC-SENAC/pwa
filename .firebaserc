@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "pi-3p-tads049"
-  }
+  },
+  "targets": {
+    "pi-3p-tads049": {
+      "hosting": {
+        "developer-sighc": [
+          "developer-sighc"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
