@@ -236,14 +236,14 @@ const Admin: React.FC = () => {
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       r = r.filter((c) =>
-        c.nomeAluno.toLowerCase().includes(q) ||
-        c.emailAluno.toLowerCase().includes(q) ||
-        c.nomeArquivo.toLowerCase().includes(q)
+        (c.nomeAluno ?? "").toLowerCase().includes(q) ||
+        (c.emailAluno ?? "").toLowerCase().includes(q) ||
+        (c.nomeArquivo ?? "").toLowerCase().includes(q)
       );
     }
     if (sortOrder === "recente") r.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
     else if (sortOrder === "antigo") r.sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
-    else if (sortOrder === "az") r.sort((a, b) => a.nomeAluno.localeCompare(b.nomeAluno));
+    else if (sortOrder === "az") r.sort((a, b) => (a.nomeAluno ?? "").localeCompare(b.nomeAluno ?? ""));
     return r;
   }, [certificadosVisiveis, statusFilter, searchTerm, sortOrder, alunoView]);
 
