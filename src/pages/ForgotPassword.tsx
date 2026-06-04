@@ -46,9 +46,9 @@ const ForgotPassword: React.FC = () => {
     }
     
     // Valida formato do email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@edu\.pe\.senac\.br$/i;
     if (!emailRegex.test(email)) {
-      toast.error("Informe um e-mail válido.");
+      toast.error("Apenas e-mails institucionais @edu.pe.senac.br são permitidos.");
       return;
     }
     

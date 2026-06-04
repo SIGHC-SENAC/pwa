@@ -197,6 +197,10 @@ export async function fetchAlunos(cursoId?: string): Promise<Aluno[]> {
  * @returns Dados do aluno criado
  */
 export async function createAluno(payload: AlunoPayload): Promise<any> {
+  if (!payload.email.toLowerCase().endsWith("@edu.pe.senac.br")) {
+    throw new Error("O e-mail do aluno deve ser do domínio @edu.pe.senac.br");
+  }
+
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/alunos`, {
     method: "POST",
@@ -217,6 +221,10 @@ export async function createAluno(payload: AlunoPayload): Promise<any> {
  * @returns Dados atualizados do aluno
  */
 export async function updateAluno(id: string, payload: AlunoPayload): Promise<Aluno> {
+  if (payload.email && !payload.email.toLowerCase().endsWith("@edu.pe.senac.br")) {
+    throw new Error("O e-mail do aluno deve ser do domínio @edu.pe.senac.br");
+  }
+
   const headers = await getAuthHeaders();
   const cursoId = payload.cursoId || payload.cursoIds?.[0];
   const res = await fetch(`${API_BASE}/alunos/${id}`, {

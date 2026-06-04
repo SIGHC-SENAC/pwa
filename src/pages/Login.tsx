@@ -61,6 +61,11 @@ const Login: React.FC = () => {
       toast.error("Preencha todos os campos.");
       return;
     }
+
+    if (!email.toLowerCase().endsWith("@edu.pe.senac.br")) {
+      toast.error("Acesso permitido apenas para e-mails @edu.pe.senac.br");
+      return;
+    }
     
     // Define loading como true durante o processo
     setLoading(true);
