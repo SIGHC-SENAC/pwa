@@ -1,14 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { BookOpen, Clock3, FileCheck2, Layers3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { GRUPOS_ATIVIDADES } from "@/lib/categoriasComplementares";
 import { fetchCursoById, type Curso } from "@/services/cursoService";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -17,6 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Props {
@@ -24,21 +23,20 @@ interface Props {
   cursoIds?: string[];
 }
 
+type GrupoAtividade = NonNullable<Curso["regrasAtividades"]>[number];
+
 const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [selectedCursoId, setSelectedCursoId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modalGrupo, setModalGrupo] = useState<GrupoAtividade | null>(null);
 
   useEffect(() => {
     let active = true;
     const ids = cursoIds?.length ? cursoIds : cursoId ? [cursoId] : [];
 
     async function loadCursos() {
-      if (ids.length === 0) {
-        setCursos([]);
-        return;
-      }
-
+      if (ids.length === 0) { setCursos([]); return; }
       setLoading(true);
       try {
         const data = await Promise.all(ids.map((id) => fetchCursoById(id).catch(() => null)));
@@ -56,25 +54,20 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
     }
 
     loadCursos();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [cursoId, cursoIds]);
 
-  const selectedCurso = useMemo(() => {
-    return cursos.find((curso) => curso.id === selectedCursoId) || cursos[0] || null;
-  }, [cursos, selectedCursoId]);
+  const selectedCurso = useMemo(
+    () => cursos.find((c) => c.id === selectedCursoId) || cursos[0] || null,
+    [cursos, selectedCursoId]
+  );
 
-  const gruposAtividades = selectedCurso?.regrasAtividades?.length
-    ? selectedCurso.regrasAtividades
-    : GRUPOS_ATIVIDADES;
+  const gruposAtividades = selectedCurso?.regrasAtividades ?? [];
 
   const resumo = useMemo(() => {
-    const totalAtividades = gruposAtividades.reduce((total, grupo) => total + grupo.atividades.length, 0);
+    const totalAtividades = gruposAtividades.reduce((t, g) => t + g.atividades.length, 0);
     const totalHorasCategorias = gruposAtividades.reduce(
-      (total, grupo) => total + grupo.atividades.reduce((grupoTotal, atividade) => grupoTotal + (atividade.horasMaximas || 0), 0),
-      0
+      (t, g) => t + g.atividades.reduce((gt, a) => gt + (a.horasMaximas || 0), 0), 0
     );
     return {
       totalGrupos: gruposAtividades.length,
@@ -104,6 +97,7 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
 
   return (
     <div className="space-y-5">
+      {/* Card do curso */}
       <section className="rounded-xl border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -159,50 +153,60 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
         </div>
       </section>
 
-      <Accordion type="multiple" className="space-y-4">
+      {/* Cards de categorias — clique abre modal */}
+      <div className="space-y-3">
         {gruposAtividades.map((grupo) => (
-          <AccordionItem key={grupo.id} value={grupo.id} className="overflow-hidden rounded-xl border bg-card shadow-sm">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline">
-              <div className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="font-semibold text-foreground">{grupo.label}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {grupo.atividades.length} {grupo.atividades.length === 1 ? "opcao" : "opcoes"} de atividade
-                  </p>
-                </div>
-                <Badge variant="outline" className="mr-3 w-fit bg-background">{grupo.tipo}</Badge>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="overflow-x-auto border-t">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[88px]">Codigo</TableHead>
-                      <TableHead>Atividade</TableHead>
-                      <TableHead className="min-w-[180px]">Horas maximas</TableHead>
-                      <TableHead className="min-w-[260px]">Comprovacao exigida</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {grupo.atividades.map((atividade) => (
-                      <TableRow key={atividade.id}>
-                        <TableCell><Badge variant="outline">{atividade.id}</Badge></TableCell>
-                        <TableCell className="font-medium text-foreground">{atividade.descricao}</TableCell>
-                        <TableCell className="text-sm text-foreground">
-                          {atividade.horasMaximas || 0}h
-                          <span className="block text-xs text-muted-foreground">{atividade.aproveitamentoMaximo}</span>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{atividade.requisito}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+          <button
+            key={grupo.id}
+            onClick={() => setModalGrupo(grupo)}
+            className="group flex w-full items-center justify-between rounded-xl border bg-card p-4 text-left shadow-sm transition-colors hover:bg-accent"
+          >
+            <div>
+              <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                {grupo.label}
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {grupo.atividades.length} {grupo.atividades.length === 1 ? "opcao" : "opcoes"} de atividade
+              </p>
+            </div>
+            <Badge variant="outline" className="shrink-0 bg-background">{grupo.tipo}</Badge>
+          </button>
         ))}
-      </Accordion>
+      </div>
+
+      {/* Modal de atividades */}
+      <Dialog open={!!modalGrupo} onOpenChange={(open) => { if (!open) setModalGrupo(null); }}>
+        <DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{modalGrupo?.label}</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[88px]">Codigo</TableHead>
+                  <TableHead>Atividade</TableHead>
+                  <TableHead className="min-w-[140px]">Horas maximas</TableHead>
+                  <TableHead className="min-w-[220px]">Comprovacao exigida</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {modalGrupo?.atividades.map((atividade) => (
+                  <TableRow key={atividade.id}>
+                    <TableCell><Badge variant="outline">{atividade.id}</Badge></TableCell>
+                    <TableCell className="font-medium text-foreground">{atividade.descricao}</TableCell>
+                    <TableCell className="text-sm text-foreground">
+                      {atividade.horasMaximas || 0}h
+                      <span className="block text-xs text-muted-foreground">{atividade.aproveitamentoMaximo}</span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{atividade.requisito}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { GRUPOS_ATIVIDADES, type GrupoAtividade } from "@/lib/categoriasComplementares";
+import { type GrupoAtividade } from "@/services/cursoService";
 import { CertificadoMeta } from "@/services/certificadoService";
 
 /**
@@ -117,7 +117,7 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
 
   // Cálculos básicos de progresso
   const metaHoras = cargaHorariaComplementar || TOTAL_HORAS_COMPLEMENTARES;
-  const gruposBase = gruposAtividades?.length ? gruposAtividades : GRUPOS_ATIVIDADES;
+  const gruposBase = gruposAtividades ?? [];
   const horasRestantes = Math.max(0, metaHoras - horasAprovadas);
   const percentual = Math.min(100, Math.round((horasAprovadas / metaHoras) * 100));
   // Verifica se o aluno já atingiu a meta

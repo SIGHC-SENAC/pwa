@@ -1,17 +1,17 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Award,
   CheckCircle2,
   Clock3,
   FileText,
   GraduationCap,
+  Loader2,
   Mail,
   Target,
   XCircle,
 } from "lucide-react";
-import type { Aluno } from "@/services/cursoService";
-import { type CertificadoMeta, formatFileSize } from "@/services/certificadoService";
-import { GRUPOS_ATIVIDADES } from "@/lib/categoriasComplementares";
+import { type Aluno, fetchCursoById, type GrupoAtividade } from "@/services/cursoService";
+import { type CertificadoMeta, fetchCertificados, formatFileSize } from "@/services/certificadoService";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,11 +24,10 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-const TOTAL_HORAS_COMPLEMENTARES = 100;
+const TOTAL_HORAS_COMPLEMENTARES_DEFAULT = 100;
 
 type Props = {
   aluno: Aluno | null;
-  certificados: CertificadoMeta[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
@@ -54,14 +53,30 @@ function formatDate(ts: { seconds: number; nanoseconds?: number } | number | nul
   });
 }
 
-const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, certificados, open, onOpenChange }) => {
-  const alunoCertificados = useMemo(() => {
-    if (!aluno) return [];
+const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, open, onOpenChange }) => {
+  const [alunoCertificados, setAlunoCertificados] = useState<CertificadoMeta[]>([]);
+  const [regrasAtividades, setRegrasAtividades] = useState<GrupoAtividade[]>([]);
+  const [cargaHoraria, setCargaHoraria] = useState(TOTAL_HORAS_COMPLEMENTARES_DEFAULT);
+  const [loadingCerts, setLoadingCerts] = useState(false);
 
-    return certificados
-      .filter((cert) => cert.uid === aluno.id)
-      .sort((a, b) => tsToMs(b.createdAt) - tsToMs(a.createdAt));
-  }, [aluno, certificados]);
+  useEffect(() => {
+    if (!aluno || !open) return;
+
+    setLoadingCerts(true);
+    const cursoId = aluno.cursoId || aluno.cursoIds?.[0];
+
+    Promise.all([
+      fetchCertificados(aluno.id),
+      cursoId ? fetchCursoById(cursoId).catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([certs, curso]) => {
+        setAlunoCertificados(certs.sort((a, b) => tsToMs(b.createdAt) - tsToMs(a.createdAt)));
+        setRegrasAtividades(curso?.regrasAtividades ?? []);
+        setCargaHoraria(curso?.cargaHorariaComplementar ?? TOTAL_HORAS_COMPLEMENTARES_DEFAULT);
+      })
+      .catch(() => { setAlunoCertificados([]); setRegrasAtividades([]); })
+      .finally(() => setLoadingCerts(false));
+  }, [aluno, open]);
 
   const resumo = useMemo(() => {
     const pendentes = alunoCertificados.filter((cert) => cert.status === "pendente").length;
@@ -81,10 +96,10 @@ const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, certificados, open, onOp
     };
   }, [alunoCertificados]);
 
-  const percentual = Math.min(100, Math.round((resumo.horasAprovadas / TOTAL_HORAS_COMPLEMENTARES) * 100));
+  const percentual = Math.min(100, Math.round((resumo.horasAprovadas / cargaHoraria) * 100));
 
   const gruposDetalhados = useMemo(() => {
-    return GRUPOS_ATIVIDADES.map((grupo) => {
+    return regrasAtividades.map((grupo) => {
       const atividades = grupo.atividades.map((atividade) => {
         const relacionados = alunoCertificados.filter((certificado) => certificado.categoriaId === atividade.id);
         const aprovados = relacionados.filter((certificado) => certificado.status === "aprovado");
@@ -120,6 +135,11 @@ const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, certificados, open, onOp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {loadingCerts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
       <DialogContent className="max-w-6xl h-[90vh] overflow-hidden p-0 gap-0">
         <DialogHeader className="border-b bg-primary/5 px-6 py-5 text-left">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-primary">
@@ -215,7 +235,7 @@ const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, certificados, open, onOp
                       </p>
                       <p className="mt-2 text-lg font-bold text-foreground">{aluno.cursoNome || "Curso vinculado"}</p>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {resumo.horasAprovadas}h de {TOTAL_HORAS_COMPLEMENTARES}h concluidas
+                        {resumo.horasAprovadas}h de {cargaHoraria}h concluidas
                       </p>
                     </div>
                     <div className="rounded-xl border bg-background/80 px-4 py-3">

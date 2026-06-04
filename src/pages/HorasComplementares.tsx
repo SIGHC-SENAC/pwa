@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
-import { findAtividadeById } from "@/lib/categoriasComplementares";
+import { findAtividadeInGrupos } from "@/services/cursoService";
 import { Button } from "@/components/ui/button";
 import DashboardCards from "@/components/DashboardCards";
 import FloatingUploadButton from "@/components/FloatingUploadButton";
@@ -143,10 +143,8 @@ const HorasComplementares: React.FC = () => {
     if (!file || !user || !userData || !categoriaId || !cursoId) return;
 
     const cursoSelecionado = cursos.find((item) => item.id === cursoId) || curso;
-    const gruposCurso = cursoSelecionado?.regrasAtividades || [];
-    const categoriaInfo = gruposCurso
-      .flatMap((grupo) => grupo.atividades)
-      .find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId);
+    const gruposCurso = cursoSelecionado?.regrasAtividades ?? [];
+    const categoriaInfo = findAtividadeInGrupos(gruposCurso, categoriaId);
     const categoriaNome = categoriaInfo ? `${categoriaInfo.id} - ${categoriaInfo.descricao}` : null;
 
     setUploading(true);

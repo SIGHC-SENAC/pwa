@@ -1,20 +1,23 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { CertificadoMeta, formatFileSize } from "@/services/certificadoService";
 import {
-  fetchAllCertificados,
+  fetchCertificadosPaged,
   aprovarCertificado,
   rejeitarCertificado,
   atualizarCategoriaCertificado,
 } from "@/services/adminService";
-import { fetchAlunos } from "@/services/cursoService";
 import PdfViewerModal from "@/components/PdfViewerModal";
 import AdminDashboardCharts from "@/components/AdminDashboardCharts";
 import AdminAlunosPorTurma from "@/components/AdminAlunosPorTurma";
 import AdminCursoInfo from "@/components/AdminCursoInfo";
+import { fetchAlunos, type Curso } from "@/services/cursoService";
+import { fetchTurmas, type Turma } from "@/services/turmaService";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +62,9 @@ import {
   ClipboardList,
   GraduationCap,
   BookOpen,
+  ArrowLeft,
+  Clock,
+  Layers3,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import NotificationBell from "@/components/NotificationBell";
@@ -96,8 +102,6 @@ function formatDate(ts: { seconds: number } | number | null | undefined): string
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-// Numero de linhas exibidas por pagina na listagem de certificados.
-const ITEMS_PER_PAGE = 15;
 
 // Extrai segundos de um timestamp independente do formato (Firestore Timestamp ou numero).
 function toSeconds(ts: any): number {
@@ -119,47 +123,82 @@ const Admin: React.FC = () => {
   const isAdmin = userData?.role === "admin" || userData?.role === "superAdmin";
   const isMobile = useIsMobile();
 
-  // Estados principais da pagina: secao ativa, dados, modal e menu mobile.
+  // Estados principais da pagina: secao ativa, modal e menu mobile.
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
-  const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState<CertificadoMeta | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Filtros, ordenacao, paginacao e filtro focado em um aluno.
+  // Filtros e ordenacao (server-side); busca textual (client-side na pagina atual).
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [sortOrder, setSortOrder] = useState("recente");
-  const [currentPage, setCurrentPage] = useState(1);
   const [alunoView, setAlunoView] = useState<string | null>(null);
 
-  // Carrega os certificados exibidos no painel.
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  // Estado da pagina atual de certificados (cursor Firestore).
+  const [certPage, setCertPage] = useState<CertificadoMeta[]>([]);
+  const [certLoading, setCertLoading] = useState(false);
+  const [certCursor, setCertCursor] = useState<string | null>(null);
+  const [certCursorStack, setCertCursorStack] = useState<Array<string | null>>([]);
+  const [certHasMore, setCertHasMore] = useState(false);
+  const [certPageNum, setCertPageNum] = useState(1);
+
+  // Contagens para as abas (via agregacao Firestore, sem carregar todos os docs).
+  const [stats, setStats] = useState({ total: 0, pendentes: 0, aprovados: 0, rejeitados: 0 });
+
+  // Navegacao por curso/turma na secao de certificados.
+  const [certNavStep, setCertNavStep] = useState<"curso" | "turma" | "lista">("curso");
+  const [certNavCurso, setCertNavCurso] = useState<Curso | null>(null);
+  const [certNavTurma, setCertNavTurma] = useState<Turma | null>(null);
+  const [certNavTurmas, setCertNavTurmas] = useState<Turma[]>([]);
+  const [certNavAlunoIds, setCertNavAlunoIds] = useState<Set<string> | null>(null);
+  const [certNavLoading, setCertNavLoading] = useState(false);
+
+  // Cinco ultimos certificados recebidos (painel lateral direito).
+  const [recentCerts, setRecentCerts] = useState<CertificadoMeta[]>([]);
+
+  // Lista de cursos sob responsabilidade do admin/coordenador.
+  const cursoIdsAdmin = useMemo(() => {
+    return userData?.cursoIds?.length ? userData.cursoIds : userData?.cursoId ? [userData.cursoId] : [];
+  }, [userData?.cursoId, userData?.cursoIds]);
+
+  const isSuperAdmin = userData?.role === "superAdmin";
+
+  // Carrega uma pagina de certificados do Firestore com cursor.
+  const loadCertPage = useCallback(async (afterId: string | null = null) => {
+    if (!isAdmin) return;
+    setCertLoading(true);
     try {
-      // Busca certificados e alunos em paralelo para melhor performance
-      const [certs, students] = await Promise.all([
-        fetchAllCertificados(),
-        fetchAlunos()
-      ]);
+      const sortField = sortOrder === "az" || sortOrder === "za" ? "nomeAluno" : "createdAt";
+      const sortDir = sortOrder === "antigo" || sortOrder === "az" ? "asc" : "desc";
+      // Se ha curso selecionado na nav, filtra apenas por ele; senao usa todos os cursos do admin.
+      const cursoIds = certNavCurso?.id ? [certNavCurso.id] : (isSuperAdmin ? [] : cursoIdsAdmin);
 
-      const studentMap = new Map(students.map(s => [s.id, s.nome]));
+      const result = await fetchCertificadosPaged({
+        startAfterId: afterId ?? undefined,
+        uidFilter: alunoView,
+        turmaId: certNavTurma?.id ?? null,
+        cursoIds,
+        sortField,
+        sortDir,
+      });
 
-      // Enriquece o certificado com o nome do aluno caso o campo esteja vazio
-      const enrichedCerts = certs.map(cert => ({
-        ...cert,
-        nomeAluno: cert.nomeAluno || studentMap.get(cert.uid) || "Aluno não identificado"
-      }));
-
-      setCertificados(enrichedCerts);
+      setCertPage(result.certs);
+      setCertCursor(result.lastId);
+      setCertHasMore(result.hasMore);
+      setStats({
+        total:     result.certs.length,
+        pendentes: result.certs.filter((c) => c.status === "pendente").length,
+        aprovados: result.certs.filter((c) => c.status === "aprovado").length,
+        rejeitados: result.certs.filter((c) => c.status === "rejeitado").length,
+      });
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar certificados.");
     } finally {
-      setLoading(false);
+      setCertLoading(false);
     }
-  }, []);
+  }, [isAdmin, isSuperAdmin, cursoIdsAdmin, sortOrder, alunoView, certNavCurso, certNavTurma]);
 
   // Redireciona para login quando a sessao nao existe.
   useEffect(() => {
@@ -169,19 +208,95 @@ const Admin: React.FC = () => {
     }
   }, [authLoading, location.pathname, location.search, navigate, user]);
 
-  // Busca dados assim que o usuario autenticado tiver permissao administrativa.
-  useEffect(() => { if (user && isAdmin) loadData(); }, [user, isAdmin, loadData]);
+  // Carrega a primeira pagina ao autenticar.
+  useEffect(() => {
+    if (user && isAdmin) {
+      setCertCursorStack([]);
+      setCertPageNum(1);
+      loadCertPage(null);
+    }
+  }, [user, isAdmin, loadCertPage]);
 
-  // Lista de cursos sob responsabilidade do admin/coordenador.
-  const cursoIdsAdmin = useMemo(() => {
-    return userData?.cursoIds?.length ? userData.cursoIds : userData?.cursoId ? [userData.cursoId] : [];
-  }, [userData?.cursoId, userData?.cursoIds]);
+  // Recarrega do inicio quando filtros, ordenacao ou curso/turma selecionados mudam.
+  useEffect(() => {
+    setCertCursorStack([]);
+    setCertCursor(null);
+    setCertPageNum(1);
+    loadCertPage(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortOrder, alunoView, certNavCurso, certNavTurma]);
 
-  // Super admin ve todos; admin comum ve somente certificados dos seus cursos.
-  const certificadosVisiveis = useMemo(() => {
-    if (userData?.role === "superAdmin" || cursoIdsAdmin.length === 0) return certificados;
-    return certificados.filter((certificado) => !certificado.cursoId || cursoIdsAdmin.includes(certificado.cursoId));
-  }, [certificados, cursoIdsAdmin, userData?.role]);
+  // Carrega os 5 ultimos recebidos para o painel lateral (independente da nav).
+  useEffect(() => {
+    if (!isAdmin) return;
+    const cursoIds = isSuperAdmin ? [] : cursoIdsAdmin;
+    fetchCertificadosPaged({ sortField: "createdAt", sortDir: "desc", cursoIds })
+      .then((r) => setRecentCerts(r.certs.slice(0, 5)))
+      .catch(() => {});
+  }, [isAdmin, isSuperAdmin, cursoIdsAdmin]);
+
+  // Seleciona um curso na navegacao de certificados.
+  const handleCertNavSelectCurso = useCallback(async (curso: Curso) => {
+    setCertNavCurso(curso);
+    setCertNavTurma(null);
+    setCertNavAlunoIds(null);
+    setCertNavStep("turma");
+    setCertNavLoading(true);
+    try {
+      const turmas = await fetchTurmas(curso.id!);
+      setCertNavTurmas(turmas);
+    } catch {
+      toast.error("Erro ao carregar turmas.");
+    } finally {
+      setCertNavLoading(false);
+    }
+  }, []);
+
+  // Seleciona uma turma (null = todos os alunos do curso).
+  const handleCertNavSelectTurma = useCallback(async (turma: Turma | null) => {
+    setCertNavTurma(turma);
+    setCertNavStep("lista");
+    if (!turma || !certNavCurso?.id) { setCertNavAlunoIds(null); return; }
+    try {
+      const alunos = await fetchAlunos(certNavCurso.id!);
+      const ids = new Set(alunos.filter((a) => a.turmaId === turma.id).map((a) => a.id));
+      setCertNavAlunoIds(ids);
+    } catch {
+      setCertNavAlunoIds(null);
+    }
+  }, [certNavCurso]);
+
+  // Volta para selecao de curso.
+  const handleCertNavBackToCurso = useCallback(() => {
+    setCertNavStep("curso");
+    setCertNavCurso(null);
+    setCertNavTurma(null);
+    setCertNavAlunoIds(null);
+    setCertNavTurmas([]);
+  }, []);
+
+  // Volta para selecao de turma.
+  const handleCertNavBackToTurma = useCallback(() => {
+    setCertNavStep("turma");
+    setCertNavTurma(null);
+    setCertNavAlunoIds(null);
+  }, []);
+
+  // Auto-navega para selecao de turma quando ha apenas 1 curso disponivel.
+  useEffect(() => {
+    if (activeSection !== "certificados" || certNavStep !== "curso") return;
+    const navCursos = (userData?.cursos ?? []).filter((c) => isSuperAdmin || cursoIdsAdmin.includes(c.id));
+    if (navCursos.length === 1) {
+      handleCertNavSelectCurso({
+        id: navCursos[0].id,
+        nome: navCursos[0].nome,
+        codigo: navCursos[0].codigo ?? navCursos[0].id,
+        turno: (navCursos[0].turno ?? "tarde") as Curso["turno"],
+        cargaHorariaComplementar: 0,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection, userData?.cursos]);
 
   // Fecha o modal de certificado e limpa o parametro certificadoId da URL.
   const closeCertificadoModal = useCallback(() => {
@@ -194,56 +309,56 @@ const Admin: React.FC = () => {
     }, { replace: true });
   }, [setSearchParams]);
 
-  // Permite abrir diretamente um certificado por link com ?certificadoId=...
+  // Abre diretamente um certificado por link com ?certificadoId=...
   useEffect(() => {
     const certificadoId = searchParams.get("certificadoId");
-    if (!certificadoId || loading || !isAdmin) return;
+    if (!certificadoId || certLoading || !isAdmin) return;
 
-    const certificado = certificadosVisiveis.find((item) => item.id === certificadoId);
-    if (!certificado) return;
+    const fromPage = certPage.find((item) => item.id === certificadoId);
+    if (fromPage) {
+      setActiveSection("certificados");
+      setSelectedCert(fromPage);
+      setModalOpen(true);
+      return;
+    }
+    // Certificado nao esta na pagina atual: busca diretamente pelo ID.
+    getDoc(doc(db, "certificados_horas_complementares", certificadoId)).then((snap) => {
+      if (!snap.exists()) return;
+      setActiveSection("certificados");
+      setSelectedCert({ id: snap.id, ...snap.data() } as CertificadoMeta);
+      setModalOpen(true);
+    });
+  }, [certPage, certLoading, isAdmin, searchParams]);
 
-    setActiveSection("certificados");
-    setSelectedCert(certificado);
-    setModalOpen(true);
-  }, [certificadosVisiveis, isAdmin, loading, searchParams]);
+  // Apos aprovar/rejeitar: recarrega pagina atual.
+  const refreshAfterAction = useCallback(async () => {
+    const prevCursor = certCursorStack.length > 0 ? certCursorStack[certCursorStack.length - 1] : null;
+    await loadCertPage(prevCursor);
+  }, [certCursorStack, loadCertPage]);
 
-  // Aprova certificado, dispara feedback ao aluno pelo service e recarrega os dados.
   const handleAprovar = async (certId: string, horas: number, obs: string) => {
     if (!user || !userData) return;
     await aprovarCertificado(certId, user.uid, userData.nome || user.displayName || "Admin", horas, obs);
-    await loadData();
+    await refreshAfterAction();
   };
 
-  // Rejeita certificado, dispara feedback ao aluno pelo service e recarrega os dados.
   const handleRejeitar = async (certId: string, motivo: string, obs: string) => {
     if (!user || !userData) return;
     await rejeitarCertificado(certId, user.uid, userData.nome || user.displayName || "Admin", motivo, obs);
-    await loadData();
+    await refreshAfterAction();
   };
 
-  // Atualiza a categoria do certificado sem fechar o modal de detalhes.
   const handleAtualizarCategoria = async (certId: string, categoriaId: string | null, categoriaNome: string | null) => {
     await atualizarCategoriaCertificado(certId, categoriaId, categoriaNome);
     setSelectedCert((current) =>
       current?.id === certId ? { ...current, categoriaId, categoriaNome } : current
     );
-    await loadData();
   };
 
-  // Totais usados nas abas de status e nos graficos do dashboard.
-  const stats = useMemo(() => {
-    const total     = certificadosVisiveis.length;
-    const pendentes = certificadosVisiveis.filter((c) => c.status === "pendente").length;
-    const aprovados = certificadosVisiveis.filter((c) => c.status === "aprovado").length;
-    const rejeitados= certificadosVisiveis.filter((c) => c.status === "rejeitado").length;
-    const horasTotal= certificadosVisiveis.reduce((s, c) => s + (c.horasAprovadas || 0), 0);
-    return { total, pendentes, aprovados, rejeitados, horasTotal };
-  }, [certificadosVisiveis]);
-
-  // Consolida dados por aluno para exibir o banner quando um aluno e filtrado.
+  // Consolida dados do aluno a partir da pagina atual (usado no banner alunoView).
   const alunosSummary = useMemo(() => {
     const map = new Map<string, { nome: string; email: string; total: number; aprovados: number; rejeitados: number; pendentes: number; horas: number }>();
-    certificadosVisiveis.forEach((c) => {
+    certPage.forEach((c) => {
       const e = map.get(c.uid) || { nome: c.nomeAluno, email: c.emailAluno, total: 0, aprovados: 0, rejeitados: 0, pendentes: 0, horas: 0 };
       e.total++;
       if (c.status === "aprovado") { e.aprovados++; e.horas += c.horasAprovadas || 0; }
@@ -252,13 +367,14 @@ const Admin: React.FC = () => {
       map.set(c.uid, e);
     });
     return map;
-  }, [certificadosVisiveis]);
+  }, [certPage]);
 
   // Aplica filtros de aluno, status, busca textual e ordenacao.
+  // Filtra a pagina atual por turma (client-side) e pelo termo de busca.
   const filtered = useMemo(() => {
-    let r = [...certificadosVisiveis];
-    if (alunoView) r = r.filter((c) => c.uid === alunoView);
-    if (statusFilter !== "todos") r = r.filter((c) => c.status === statusFilter);
+    let r = certNavAlunoIds ? certPage.filter((c) => certNavAlunoIds.has(c.uid)) : certPage;
+    if (statusFilter && statusFilter !== "todos")
+      r = r.filter((c) => c.status === statusFilter);
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       r = r.filter((c) =>
@@ -267,31 +383,8 @@ const Admin: React.FC = () => {
         String(c.nomeArquivo || "").toLowerCase().includes(q)
       );
     }
-    const collator = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true });
-    if (sortOrder === "recente") {
-      r.sort((a, b) => toSeconds(b.createdAt) - toSeconds(a.createdAt));
-    } else if (sortOrder === "antigo") {
-      r.sort((a, b) => toSeconds(a.createdAt) - toSeconds(b.createdAt));
-    } else if (sortOrder === "az") {
-      r.sort((a, b) => {
-        const name = collator.compare(String(a.nomeAluno || ""), String(b.nomeAluno || ""));
-        return name !== 0 ? name : toSeconds(b.createdAt) - toSeconds(a.createdAt);
-      });
-    } else if (sortOrder === "za") {
-      r.sort((a, b) => {
-        const name = collator.compare(String(b.nomeAluno || ""), String(a.nomeAluno || ""));
-        return name !== 0 ? name : toSeconds(b.createdAt) - toSeconds(a.createdAt);
-      });
-    }
     return r;
-  }, [certificadosVisiveis, statusFilter, searchTerm, sortOrder, alunoView]);
-
-  // Dados da pagina atual da tabela.
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  // Volta para a primeira pagina sempre que o resultado filtrado muda.
-  useEffect(() => { setCurrentPage(1); }, [statusFilter, searchTerm, sortOrder, alunoView]);
+  }, [certPage, certNavAlunoIds, statusFilter, searchTerm]);
 
   // Tela de carregamento enquanto autentica ou busca dados do usuario.
   if (authLoading || (user && !userData)) {
@@ -461,173 +554,336 @@ const Admin: React.FC = () => {
 
           <div className="space-y-5 px-4 py-5 pb-8 sm:px-8 sm:py-6">
 
-            {/* Dashboard com graficos e indicadores dos certificados visiveis. */}
+            {/* Dashboard com graficos e indicadores; busca proprios dados. */}
             {activeSection === "dashboard" && (
-              <AdminDashboardCharts certificados={certificadosVisiveis} loading={loading} cursoIds={cursoIdsAdmin} />
+              <AdminDashboardCharts cursoIds={cursoIdsAdmin} />
             )}
             {activeSection === "alunos" && (
-              <AdminAlunosPorTurma cursoIds={cursoIdsAdmin} certificados={certificadosVisiveis} />
+              <AdminAlunosPorTurma cursoIds={cursoIdsAdmin} />
             )}
             {/* Dados do curso administrado, categorias e regras de horas complementares. */}
             {activeSection === "curso" && (
               <AdminCursoInfo cursoId={userData?.cursoId} cursoIds={cursoIdsAdmin} />
             )}
 
-            {/* Area de certificados: filtros, abas de status, tabela e paginacao. */}
+            {/* Area de certificados: navegacao por curso/turma + tabela + painel lateral. */}
             {activeSection === "certificados" && (<>
 
-              {/* Banner exibido quando a tabela esta filtrada para um aluno especifico. */}
-              {alunoView && (() => {
-                const al = alunosSummary.get(alunoView);
-                return al ? (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border-l-4 border-l-secondary bg-card p-3 sm:p-4 shadow-sm">
-                    <div className="text-sm min-w-0">
-                      <span className="text-muted-foreground">Aluno: </span>
-                      <span className="font-semibold text-foreground">{al.nome}</span>
-                      <span className="text-muted-foreground block sm:inline"> — {al.total} envios, {al.horas}h aprovadas</span>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setAlunoView(null)} className="self-end sm:self-auto shrink-0">Limpar filtro</Button>
-                  </div>
-                ) : null;
-              })()}
+              {/* Layout de duas colunas: nav+lista (esquerda) e ultimos recebidos (direita). */}
+              <div className="flex flex-col lg:flex-row gap-5 items-start">
 
-              {/* Filtros de busca textual e ordenacao da lista. */}
-              <div className="rounded-xl border bg-card p-3 sm:p-4 shadow-sm">
-                <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="Buscar aluno, e-mail ou arquivo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
-                  </div>
-                  <Select value={sortOrder} onValueChange={setSortOrder}>
-                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recente">Mais recente</SelectItem>
-                      <SelectItem value="antigo">Mais antigo</SelectItem>
-                      <SelectItem value="az">Aluno A-Z</SelectItem>
-                    <SelectItem value="za">Aluno Z-A</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                {/* ── COLUNA ESQUERDA: navegacao + lista ────────────────────────── */}
+                <div className="flex-1 min-w-0 space-y-4">
 
-              {/* Abas de status para filtrar rapidamente pendentes, aprovados e rejeitados. */}
-              <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-                <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
-                  <TabsTrigger value="todos"     className="text-xs sm:text-sm">Todos ({stats.total})</TabsTrigger>
-                  <TabsTrigger value="pendente"  className="text-xs sm:text-sm">Pend. ({stats.pendentes})</TabsTrigger>
-                  <TabsTrigger value="aprovado"  className="text-xs sm:text-sm">Aprov. ({stats.aprovados})</TabsTrigger>
-                  <TabsTrigger value="rejeitado" className="text-xs sm:text-sm">Rej. ({stats.rejeitados})</TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {/* Tabela/lista responsiva de certificados filtrados. */}
-              <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-                {loading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                ) : filtered.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center px-4">
-                    <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/40" />
-                    <p className="mt-4 text-base sm:text-lg font-bold text-foreground">Nenhum certificado encontrado</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos envios</p>
-                  </div>
-                ) : (<>
-                  {/* Versao mobile: cards empilhados com as informacoes principais. */}
-                  {isMobile ? (
-                    <div className="divide-y">
-                      {paginated.map((cert) => {
-                        const st = statusConfig[cert.status] || statusConfig.pendente;
-                        return (
-                          <div key={cert.id} className="p-4 space-y-3">
-                            <div className="flex items-start justify-between gap-2">
+                  {/* STEP: selecao de curso */}
+                  {certNavStep === "curso" && (() => {
+                    const navCursos = (userData?.cursos ?? []).filter(c =>
+                      isSuperAdmin || cursoIdsAdmin.includes(c.id)
+                    );
+                    if (navCursos.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16 text-center">
+                          <FileText className="h-10 w-10 text-muted-foreground/40" />
+                          <p className="mt-4 text-sm font-medium text-foreground">Nenhum curso vinculado</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-foreground">Selecione o curso</p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {navCursos.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => handleCertNavSelectCurso({ id: c.id, nome: c.nome, codigo: c.codigo ?? c.id, turno: (c.turno ?? "tarde") as Curso["turno"], cargaHorariaComplementar: 0 })}
+                              className="group flex items-start gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            >
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                                <BookOpen className="h-4 w-4 text-primary" />
+                              </div>
                               <div className="min-w-0 flex-1">
-                                <button onClick={() => setAlunoView(cert.uid)} className="text-left hover:underline">
-                                  <p className="font-medium text-foreground text-sm truncate">{cert.nomeAluno}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{cert.emailAluno}</p>
-                                </button>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{c.codigo ?? c.id}</p>
+                                <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{c.nome}</p>
                               </div>
-                              <Badge variant="outline" className={`${st.className} shrink-0`}>{st.label}</Badge>
-                            </div>
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              <p className="truncate"><span className="text-foreground font-medium">{cert.nomeArquivo}</span></p>
-                              <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                                <span>{formatDate(cert.createdAt)}</span>
-                                <span>{formatFileSize(cert.tamanhoBytes)}</span>
-                                {cert.horasAprovadas ? <span className="text-foreground font-medium">{cert.horasAprovadas}h</span> : null}
-                              </div>
-                              {cert.nomeAdmin && <p>Analisado por: {cert.nomeAdmin}</p>}
-                            </div>
-                            <Button variant="outline" size="sm" onClick={() => { setSelectedCert(cert); setModalOpen(true); }} className="w-full gap-1.5">
-                              <Eye className="h-4 w-4" />Ver detalhes
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    /* Versao desktop: tabela completa com colunas e acoes. */
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-primary/5">
-                            <TableHead className="text-primary font-semibold">Aluno</TableHead>
-                            <TableHead className="hidden md:table-cell text-primary font-semibold">Arquivo</TableHead>
-                            <TableHead className="hidden sm:table-cell text-primary font-semibold">Data</TableHead>
-                            <TableHead className="text-primary font-semibold">Status</TableHead>
-                            <TableHead className="hidden lg:table-cell text-primary font-semibold">Horas</TableHead>
-                            <TableHead className="hidden xl:table-cell text-primary font-semibold">Analisado por</TableHead>
-                            <TableHead className="text-right text-primary font-semibold">Ações</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginated.map((cert) => {
-                            const st = statusConfig[cert.status] || statusConfig.pendente;
-                            return (
-                              <TableRow key={cert.id} className="group hover:bg-muted/50 transition-colors">
-                                <TableCell>
-                                  <button onClick={() => setAlunoView(cert.uid)} className="text-left hover:underline">
-                                    <p className="font-medium text-foreground text-sm">{cert.nomeAluno}</p>
-                                    <p className="text-xs text-muted-foreground">{cert.emailAluno}</p>
-                                  </button>
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell">
-                                  <p className="text-sm text-foreground truncate max-w-[200px]">{cert.nomeArquivo}</p>
-                                  <p className="text-xs text-muted-foreground">{formatFileSize(cert.tamanhoBytes)}</p>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{formatDate(cert.createdAt)}</TableCell>
-                                <TableCell><Badge variant="outline" className={st.className}>{st.label}</Badge></TableCell>
-                                <TableCell className="hidden lg:table-cell text-sm font-medium text-foreground">{cert.horasAprovadas || "—"}</TableCell>
-                                <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">{cert.nomeAdmin || "—"}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button variant="ghost" size="sm" onClick={() => { setSelectedCert(cert); setModalOpen(true); }} className="gap-1.5">
-                                    <Eye className="h-4 w-4" /><span className="hidden sm:inline">Detalhes</span>
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                              <ChevronRight className="h-4 w-4 shrink-0 self-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* STEP: selecao de turma */}
+                  {certNavStep === "turma" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleCertNavBackToCurso}>
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <div>
+                          <p className="text-xs text-muted-foreground">{certNavCurso?.codigo}</p>
+                          <p className="text-sm font-bold text-foreground">{certNavCurso?.nome}</p>
+                        </div>
+                      </div>
+                      {certNavLoading ? (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />)}
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {certNavTurmas
+                            .slice()
+                            .sort((a, b) => a.nome.localeCompare(b.nome))
+                            .map((t) => (
+                              <button
+                                key={t.id ?? t.nome}
+                                onClick={() => handleCertNavSelectTurma(t)}
+                                className="group flex flex-col gap-2 rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{t.nome}</p>
+                                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                                {t.horario && <p className="text-xs text-muted-foreground">{t.horario}</p>}
+                                {t.periodoInicio && t.periodoFinal && (
+                                  <p className="text-xs text-muted-foreground">{t.periodoInicio} a {t.periodoFinal}</p>
+                                )}
+                              </button>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Controles de paginacao exibidos apenas quando ha mais de uma pagina. */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t px-3 py-2.5 sm:px-4 sm:py-3">
-                      <p className="text-xs sm:text-sm text-muted-foreground">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
-                          <ChevronLeft className="h-4 w-4" />
+                  {/* STEP: lista de certificados */}
+                  {certNavStep === "lista" && (<>
+
+                    {/* Breadcrumb */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {certNavCurso && (
+                        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={handleCertNavBackToTurma}>
+                          <ArrowLeft className="h-3 w-3" />
+                          {certNavTurma ? certNavCurso.codigo : "Turmas"}
                         </Button>
-                        <span className="text-xs sm:text-sm text-foreground min-w-[3rem] text-center">{currentPage}/{totalPages}</span>
-                        <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
+                      )}
+                      <span className="text-xs text-muted-foreground/50">/</span>
+                      <span className="text-xs font-medium text-foreground">
+                        {certNavTurma ? certNavTurma.nome : certNavCurso ? "Todas as turmas" : "Todos os cursos"}
+                      </span>
+                    </div>
+
+                    {/* Banner de filtro por aluno */}
+                    {alunoView && (() => {
+                      const al = alunosSummary.get(alunoView);
+                      return al ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border-l-4 border-l-secondary bg-card p-3 sm:p-4 shadow-sm">
+                          <div className="text-sm min-w-0">
+                            <span className="text-muted-foreground">Aluno: </span>
+                            <span className="font-semibold text-foreground">{al.nome}</span>
+                            <span className="text-muted-foreground block sm:inline"> — {al.total} envios, {al.horas}h aprovadas</span>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => setAlunoView(null)} className="self-end sm:self-auto shrink-0">Limpar filtro</Button>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Filtros de busca e ordenacao */}
+                    <div className="rounded-xl border bg-card p-3 sm:p-4 shadow-sm">
+                      <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input placeholder="Buscar aluno, e-mail ou arquivo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+                        </div>
+                        <Select value={sortOrder} onValueChange={setSortOrder}>
+                          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="recente">Mais recente</SelectItem>
+                            <SelectItem value="antigo">Mais antigo</SelectItem>
+                            <SelectItem value="az">Aluno A-Z</SelectItem>
+                            <SelectItem value="za">Aluno Z-A</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  )}
-                </>)}
+
+                    {/* Abas de status */}
+                    <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+                      <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
+                        <TabsTrigger value="todos"     className="text-xs sm:text-sm">Todos ({stats.total})</TabsTrigger>
+                        <TabsTrigger value="pendente"  className="text-xs sm:text-sm">Pend. ({stats.pendentes})</TabsTrigger>
+                        <TabsTrigger value="aprovado"  className="text-xs sm:text-sm">Aprov. ({stats.aprovados})</TabsTrigger>
+                        <TabsTrigger value="rejeitado" className="text-xs sm:text-sm">Rej. ({stats.rejeitados})</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+
+                    {/* Tabela/lista de certificados */}
+                    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+                      {certLoading ? (
+                        <div className="flex items-center justify-center py-20">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : filtered.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center px-4">
+                          <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/40" />
+                          <p className="mt-4 text-base sm:text-lg font-bold text-foreground">Nenhum certificado encontrado</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos envios</p>
+                        </div>
+                      ) : (<>
+                        {isMobile ? (
+                          <div className="divide-y">
+                            {filtered.map((cert) => {
+                              const st = statusConfig[cert.status] || statusConfig.pendente;
+                              return (
+                                <div key={cert.id} className="p-4 space-y-2.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <button onClick={() => setAlunoView(cert.uid)} className="text-left hover:underline">
+                                        <p className="font-medium text-foreground text-sm truncate">{cert.nomeAluno || cert.emailAluno || "—"}</p>
+                                        {cert.nomeAluno && <p className="text-xs text-muted-foreground truncate">{cert.emailAluno}</p>}
+                                      </button>
+                                    </div>
+                                    <Badge variant="outline" className={`${st.className} shrink-0`}>{st.label}</Badge>
+                                  </div>
+                                  <div className="space-y-0.5 text-xs text-muted-foreground">
+                                    <p className="truncate font-medium text-foreground">{cert.nomeArquivo}</p>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                      <span>{formatDate(cert.createdAt)}</span>
+                                      {cert.horasAprovadas ? <span className="font-semibold text-foreground">{cert.horasAprovadas}h aprovadas</span> : null}
+                                    </div>
+                                  </div>
+                                  <Button variant="outline" size="sm" onClick={() => { setSelectedCert(cert); setModalOpen(true); }} className="w-full gap-1.5">
+                                    <Eye className="h-4 w-4" />Ver detalhes
+                                  </Button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <colgroup>
+                                <col className="w-[30%]" />
+                                <col className="hidden sm:table-column w-[28%]" />
+                                <col className="hidden md:table-column w-[17%]" />
+                                <col className="w-[15%]" />
+                                <col className="w-[10%]" />
+                              </colgroup>
+                              <TableHeader>
+                                <TableRow className="bg-primary/5">
+                                  <TableHead className="text-primary font-semibold">Aluno</TableHead>
+                                  <TableHead className="hidden sm:table-cell text-primary font-semibold">Arquivo</TableHead>
+                                  <TableHead className="hidden md:table-cell text-primary font-semibold">Data</TableHead>
+                                  <TableHead className="text-primary font-semibold">Status</TableHead>
+                                  <TableHead className="text-right text-primary font-semibold">Ações</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {filtered.map((cert) => {
+                                  const st = statusConfig[cert.status] || statusConfig.pendente;
+                                  const nomeExibido = cert.nomeAluno || cert.emailAluno || "—";
+                                  return (
+                                    <TableRow key={cert.id} className="group hover:bg-muted/50 transition-colors">
+                                      <TableCell>
+                                        <button onClick={() => setAlunoView(cert.uid)} className="text-left hover:underline w-full">
+                                          <p className="font-medium text-foreground text-sm truncate">{nomeExibido}</p>
+                                          {cert.nomeAluno && <p className="text-xs text-muted-foreground truncate">{cert.emailAluno}</p>}
+                                        </button>
+                                      </TableCell>
+                                      <TableCell className="hidden sm:table-cell">
+                                        <p className="text-sm text-foreground" title={cert.nomeArquivo}>
+                                          {cert.nomeArquivo && cert.nomeArquivo.length > 22
+                                            ? cert.nomeArquivo.slice(0, 22) + "…"
+                                            : cert.nomeArquivo}
+                                        </p>
+                                      </TableCell>
+                                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                                        {formatDate(cert.createdAt)}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant="outline" className={st.className}>{st.label}</Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm" onClick={() => { setSelectedCert(cert); setModalOpen(true); }} className="gap-1.5">
+                                          <Eye className="h-4 w-4" /><span className="hidden sm:inline">Detalhes</span>
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+
+                        {/* Paginacao cursor-based */}
+                        {(certPageNum > 1 || certHasMore) && (
+                          <div className="flex items-center justify-between border-t px-3 py-2.5 sm:px-4 sm:py-3">
+                            <p className="text-xs sm:text-sm text-muted-foreground">Página {certPageNum}</p>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <Button variant="outline" size="icon" className="h-8 w-8" disabled={certPageNum === 1 || certLoading}
+                                onClick={() => {
+                                  const newStack = [...certCursorStack];
+                                  newStack.pop();
+                                  const prevCursor = newStack.length > 0 ? newStack[newStack.length - 1] : null;
+                                  setCertCursorStack(newStack);
+                                  setCertPageNum((p) => p - 1);
+                                  loadCertPage(prevCursor);
+                                }}>
+                                <ChevronLeft className="h-4 w-4" />
+                              </Button>
+                              <span className="text-xs sm:text-sm text-foreground min-w-[2rem] text-center">{certPageNum}</span>
+                              <Button variant="outline" size="icon" className="h-8 w-8" disabled={!certHasMore || certLoading}
+                                onClick={() => {
+                                  setCertCursorStack((s) => [...s, certCursor]);
+                                  setCertPageNum((p) => p + 1);
+                                  loadCertPage(certCursor);
+                                }}>
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>)}
+                    </div>
+                  </>)}
+                </div>
+
+                {/* ── COLUNA DIREITA: 5 ultimos recebidos ─────────────────────── */}
+                <div className="w-full lg:w-64 xl:w-72 shrink-0">
+                  <div className="rounded-2xl border bg-card shadow-sm overflow-hidden sticky top-20">
+                    <div className="flex items-center gap-2.5 border-b bg-muted/30 px-4 py-3">
+                      <Clock className="h-4 w-4 text-primary shrink-0" />
+                      <p className="text-sm font-semibold text-foreground">Últimas recebidas</p>
+                    </div>
+                    {recentCerts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                        <FileText className="h-8 w-8 text-muted-foreground/30" />
+                        <p className="mt-2 text-xs text-muted-foreground">Nenhum certificado recebido.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {recentCerts.map((cert) => {
+                          const st = statusConfig[cert.status] || statusConfig.pendente;
+                          return (
+                            <button
+                              key={cert.id}
+                              onClick={() => { setSelectedCert(cert); setModalOpen(true); if (certNavStep !== "lista") setCertNavStep("lista"); }}
+                              className="flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted/60"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="truncate text-xs font-medium text-foreground">{cert.nomeAluno}</p>
+                                <Badge variant="outline" className={cn("shrink-0 text-[10px] py-0 px-1.5", st.className)}>{st.label}</Badge>
+                              </div>
+                              <p className="truncate text-[11px] text-muted-foreground">{cert.nomeArquivo}</p>
+                              <p className="text-[10px] text-muted-foreground">{formatDate(cert.createdAt)}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
               </div>
             </>)}
           </div>

@@ -1,12 +1,41 @@
-// Importações do Firebase Auth
 import { auth, db } from "@/lib/firebase";
-// Importações do Firestore
 import { doc, getDoc } from "firebase/firestore";
-// Importa interface de categorias de atividades
-import type { GrupoAtividade } from "@/lib/categoriasComplementares";
 
-// URL base da API backend
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+// ── tipos de categorias de atividades (vindos dinamicamente do curso) ─────────
+
+export interface CategoriaAtividade {
+  id: string;
+  descricao: string;
+  horasMaximas: number;
+  aproveitamentoMaximo: string;
+  requisito: string;
+  grupo: string;
+}
+
+export interface GrupoAtividade {
+  id: string;
+  label: string;
+  tipo: string;
+  atividades: CategoriaAtividade[];
+}
+
+/** Busca uma atividade pelo id dentro de um array de grupos dinâmico. */
+export function findAtividadeInGrupos(
+  grupos: GrupoAtividade[],
+  id: string
+): CategoriaAtividade | undefined {
+  return grupos.flatMap((g) => g.atividades).find((a) => a.id === id);
+}
+
+/** Busca o grupo que contém a atividade com o id fornecido. */
+export function findGrupoByAtividadeId(
+  grupos: GrupoAtividade[],
+  atividadeId: string
+): GrupoAtividade | undefined {
+  return grupos.find((g) => g.atividades.some((a) => a.id === atividadeId));
+}
 
 /**
  * Função auxiliar para obter headers com token JWT

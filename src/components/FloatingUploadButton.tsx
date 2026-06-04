@@ -27,11 +27,10 @@ import {
 import UploadDropzone from "@/components/UploadDropzone";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  GRUPOS_ATIVIDADES,
   type GrupoAtividade,
-  findAtividadeById,
+  findAtividadeInGrupos,
   findGrupoByAtividadeId,
-} from "@/lib/categoriasComplementares";
+} from "@/services/cursoService";
 
 interface FloatingUploadButtonProps {
   cursos?: Array<{ id?: string; nome: string; codigo?: string; turno?: string }>;
@@ -91,18 +90,16 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
     }
   }, [file, setOpen, uploading]);
 
+  const gruposDisponiveis = gruposAtividades ?? [];
+
   useEffect(() => {
     if (categoriaId) {
-      const grupos = gruposAtividades?.length ? gruposAtividades : GRUPOS_ATIVIDADES;
-      const grupo = grupos.find((item) => item.atividades.some((atividade) => atividade.id === categoriaId)) || findGrupoByAtividadeId(categoriaId);
+      const grupo = findGrupoByAtividadeId(gruposDisponiveis, categoriaId);
       setGrupoId(grupo?.id ?? "");
     }
-  }, [categoriaId, gruposAtividades]);
+  }, [categoriaId, gruposDisponiveis]);
 
-  const gruposDisponiveis = gruposAtividades?.length ? gruposAtividades : GRUPOS_ATIVIDADES;
-  const categoriaInfo = categoriaId
-    ? gruposDisponiveis.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId)
-    : null;
+  const categoriaInfo = categoriaId ? findAtividadeInGrupos(gruposDisponiveis, categoriaId) : null;
   const grupoSelecionado = gruposDisponiveis.find((grupo) => grupo.id === grupoId);
 
   const handleGrupoChange = (value: string) => {

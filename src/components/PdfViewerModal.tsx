@@ -26,8 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, CheckCircle2, XCircle, FileText, ExternalLink } from "lucide-react";
 import { CertificadoMeta, getDownloadURLFromPath } from "@/services/certificadoService";
-import { findAtividadeById, GRUPOS_ATIVIDADES, type GrupoAtividade } from "@/lib/categoriasComplementares";
-import { fetchCursoById } from "@/services/cursoService";
+import { fetchCursoById, type GrupoAtividade } from "@/services/cursoService";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -80,7 +79,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const [pdfUrl, setPdfUrl] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [categoriaSaving, setCategoriaSaving] = useState(false);
-  const [gruposAtividades, setGruposAtividades] = useState<GrupoAtividade[]>(GRUPOS_ATIVIDADES);
+  const [gruposAtividades, setGruposAtividades] = useState<GrupoAtividade[]>([]);
   const isMobile = useIsMobile();
 
   React.useEffect(() => {
@@ -97,22 +96,13 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 
   React.useEffect(() => {
     let active = true;
-    if (!cert?.cursoId) {
-      setGruposAtividades(GRUPOS_ATIVIDADES);
-      return;
-    }
+    if (!cert?.cursoId) { setGruposAtividades([]); return; }
 
     fetchCursoById(cert.cursoId)
-      .then((curso) => {
-        if (active) setGruposAtividades(curso.regrasAtividades?.length ? curso.regrasAtividades : GRUPOS_ATIVIDADES);
-      })
-      .catch(() => {
-        if (active) setGruposAtividades(GRUPOS_ATIVIDADES);
-      });
+      .then((curso) => { if (active) setGruposAtividades(curso.regrasAtividades ?? []); })
+      .catch(() => { if (active) setGruposAtividades([]); });
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [cert?.cursoId]);
 
   React.useEffect(() => {
@@ -162,8 +152,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const isPendente = cert.status === "pendente";
   const categoriaChanged = categoriaId !== (cert.categoriaId || "");
   const categoriaSelecionada = categoriaId
-    ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId)
-    : undefined;
+    ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId)     : undefined;
 
   const handleAprovar = async () => {
     const h = Number(horas);
@@ -208,8 +197,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     if (!categoriaChanged) return;
 
     const categoria = categoriaId
-      ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId) || findAtividadeById(categoriaId)
-      : undefined;
+      ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId)       : undefined;
     const categoriaNome = categoria ? `${categoria.id} - ${categoria.descricao}` : null;
 
     setCategoriaSaving(true);

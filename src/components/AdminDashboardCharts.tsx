@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CertificadoMeta } from "@/services/certificadoService";
+import { fetchAllCertificados } from "@/services/adminService";
 import {
   Bar,
   BarChart,
@@ -18,8 +19,6 @@ import {
 import { Award, Clock, FileCheck, FileX, Loader2, UserX, Users } from "lucide-react";
 
 interface Props {
-  certificados: CertificadoMeta[];
-  loading: boolean;
   cursoIds?: string[];
 }
 
@@ -60,9 +59,23 @@ const tooltipStyle = {
   fontSize: "12px",
 };
 
-const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds = [] }) => {
+const AdminDashboardCharts: React.FC<Props> = ({ cursoIds = [] }) => {
+  const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
+  const [loadingCerts, setLoadingCerts] = useState(true);
   const [loadingAlunos, setLoadingAlunos] = useState(true);
+
+  useEffect(() => {
+    fetchAllCertificados()
+      .then((all) => {
+        const visible = cursoIds.length
+          ? all.filter((c) => !c.cursoId || cursoIds.includes(c.cursoId))
+          : all;
+        setCertificados(visible);
+      })
+      .catch(() => setCertificados([]))
+      .finally(() => setLoadingCerts(false));
+  }, [cursoIds]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -148,7 +161,7 @@ const AdminDashboardCharts: React.FC<Props> = ({ certificados, loading, cursoIds
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [certificados, alunos]);
 
-  const isLoading = loading || loadingAlunos;
+  const isLoading = loadingCerts || loadingAlunos;
 
   if (isLoading) {
     return (

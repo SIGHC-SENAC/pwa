@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { GRUPOS_ATIVIDADES, type CategoriaAtividade, type GrupoAtividade } from "@/lib/categoriasComplementares";
+import { type CategoriaAtividade, type GrupoAtividade } from "@/services/cursoService";
 import { type Curso, updateCurso } from "@/services/cursoService";
 import {
   Accordion,
@@ -27,7 +27,7 @@ interface Props {
 }
 
 function cloneRegras(curso: Curso): GrupoAtividade[] {
-  const regras = JSON.parse(JSON.stringify(curso.regrasAtividades?.length ? curso.regrasAtividades : GRUPOS_ATIVIDADES)) as GrupoAtividade[];
+  const regras = JSON.parse(JSON.stringify(curso.regrasAtividades ?? [])) as GrupoAtividade[];
   return regras.map((grupo) => ({
     ...grupo,
     atividades: grupo.atividades.map((atividade) => {
