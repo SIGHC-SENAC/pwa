@@ -160,6 +160,9 @@ const Login: React.FC = () => {
             <p className="text-sm text-primary-foreground/60 leading-relaxed">
               Ambiente acadêmico para gestão e validação de certificados de atividades complementares.
             </p>
+            <p className="mt-4 text-[11px] font-bold text-yellow-400 uppercase tracking-wider">
+              ESSE SITE É PARA TESTES E NÃO ESTÁ RELACIONADO À INSTITUIÇÃO SENAC
+            </p>
           </div>
         </div>
       </div>
