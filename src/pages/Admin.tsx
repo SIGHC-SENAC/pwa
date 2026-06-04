@@ -10,6 +10,7 @@ import {
   rejeitarCertificado,
   atualizarCategoriaCertificado,
 } from "@/services/adminService";
+import { fetchAlunos } from "@/services/cursoService";
 import PdfViewerModal from "@/components/PdfViewerModal";
 import AdminDashboardCharts from "@/components/AdminDashboardCharts";
 import AdminAlunosPorTurma from "@/components/AdminAlunosPorTurma";
@@ -125,8 +126,21 @@ const Admin: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchAllCertificados();
-      setCertificados(data);
+      // Busca certificados e alunos em paralelo para melhor performance
+      const [certs, students] = await Promise.all([
+        fetchAllCertificados(),
+        fetchAlunos()
+      ]);
+
+      const studentMap = new Map(students.map(s => [s.id, s.nome]));
+
+      // Enriquece o certificado com o nome do aluno caso o campo esteja vazio
+      const enrichedCerts = certs.map(cert => ({
+        ...cert,
+        nomeAluno: cert.nomeAluno || studentMap.get(cert.uid) || "Aluno não identificado"
+      }));
+
+      setCertificados(enrichedCerts);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar certificados.");
