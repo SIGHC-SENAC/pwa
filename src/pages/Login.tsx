@@ -62,12 +62,6 @@ const Login: React.FC = () => {
       return;
     }
 
-    const lowerEmail = email.toLowerCase();
-    if (!lowerEmail.endsWith("@edu.pe.senac.br") && !lowerEmail.endsWith("@pe.senac.br")) {
-      toast.error("Acesso permitido apenas para e-mails @edu.pe.senac.br ou @pe.senac.br");
-      return;
-    }
-    
     // Define loading como true durante o processo
     setLoading(true);
     

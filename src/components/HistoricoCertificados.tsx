@@ -16,9 +16,15 @@ const statusConfig = {
   rejeitado: { label: "Não aprovado", className: "bg-destructive/15 text-destructive border-destructive/30", icon: XCircle, bgColor: "bg-red-50", borderColor: "border-red-200" },
 };
 
-function formatDate(ts: { seconds: number } | null): string {
+// Aceita Firestore Timestamp { seconds }, numero em ms (Date.now()) ou numero em segundos.
+function formatDate(ts: { seconds: number } | number | null | undefined): string {
   if (!ts) return "—";
-  return new Date(ts.seconds * 1000).toLocaleDateString("pt-BR", {
+  const ms = typeof ts === "number"
+    ? (ts > 1e10 ? ts : ts * 1000)
+    : ts.seconds * 1000;
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",

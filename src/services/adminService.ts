@@ -62,11 +62,13 @@ export async function fetchAllCertificados(): Promise<CertificadoMeta[]> {
       ...d.data(),
     })) as CertificadoMeta[];
 
-    return docs.sort((a, b) => {
-      const ta = a.createdAt?.seconds ?? 0;
-      const tb = b.createdAt?.seconds ?? 0;
-      return tb - ta;
-    });
+    const tsMs = (ts: any): number => {
+      if (!ts) return 0;
+      if (typeof ts === "number") return ts > 1e10 ? ts : ts * 1000;
+      if (typeof ts.seconds === "number") return ts.seconds * 1000;
+      return 0;
+    };
+    return docs.sort((a, b) => tsMs(b.createdAt) - tsMs(a.createdAt));
   }
 }
 

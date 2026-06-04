@@ -84,16 +84,28 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   rejeitado: { label: "Rejeitado", className: "bg-destructive/15 text-destructive border-destructive/30" },
 };
 
-// Formata timestamp do Firestore para uma data curta em portugues.
-function formatDate(ts: { seconds: number } | null): string {
+// Formata timestamp para uma data curta em portugues.
+// Aceita Firestore Timestamp { seconds }, numero em ms (Date.now()) ou numero em segundos.
+function formatDate(ts: { seconds: number } | number | null | undefined): string {
   if (!ts) return "—";
-  return new Date(ts.seconds * 1000).toLocaleDateString("pt-BR", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
+  const ms = typeof ts === "number"
+    ? (ts > 1e10 ? ts : ts * 1000)
+    : ts.seconds * 1000;
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 // Numero de linhas exibidas por pagina na listagem de certificados.
 const ITEMS_PER_PAGE = 15;
+
+// Extrai segundos de um timestamp independente do formato (Firestore Timestamp ou numero).
+function toSeconds(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts === "number") return ts > 1e10 ? ts / 1000 : ts;
+  if (typeof ts.seconds === "number") return ts.seconds;
+  return 0;
+}
 
 // Componente principal do painel administrativo.
 const Admin: React.FC = () => {
@@ -256,10 +268,21 @@ const Admin: React.FC = () => {
       );
     }
     const collator = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true });
-    if (sortOrder === "recente") r.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-    else if (sortOrder === "antigo") r.sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
-    else if (sortOrder === "az") r.sort((a, b) => collator.compare(String(a.nomeAluno || ""), String(b.nomeAluno || "")));
-    else if (sortOrder === "za") r.sort((a, b) => collator.compare(String(b.nomeAluno || ""), String(a.nomeAluno || "")));
+    if (sortOrder === "recente") {
+      r.sort((a, b) => toSeconds(b.createdAt) - toSeconds(a.createdAt));
+    } else if (sortOrder === "antigo") {
+      r.sort((a, b) => toSeconds(a.createdAt) - toSeconds(b.createdAt));
+    } else if (sortOrder === "az") {
+      r.sort((a, b) => {
+        const name = collator.compare(String(a.nomeAluno || ""), String(b.nomeAluno || ""));
+        return name !== 0 ? name : toSeconds(b.createdAt) - toSeconds(a.createdAt);
+      });
+    } else if (sortOrder === "za") {
+      r.sort((a, b) => {
+        const name = collator.compare(String(b.nomeAluno || ""), String(a.nomeAluno || ""));
+        return name !== 0 ? name : toSeconds(b.createdAt) - toSeconds(a.createdAt);
+      });
+    }
     return r;
   }, [certificadosVisiveis, statusFilter, searchTerm, sortOrder, alunoView]);
 

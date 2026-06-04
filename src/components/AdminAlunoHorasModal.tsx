@@ -33,9 +33,19 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
-function formatDate(ts: { seconds: number; nanoseconds?: number } | null): string {
+// Aceita Firestore Timestamp { seconds }, numero em ms (Date.now()) ou numero em segundos.
+function tsToMs(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts === "number") return ts > 1e10 ? ts : ts * 1000;
+  if (typeof ts.seconds === "number") return ts.seconds * 1000;
+  return 0;
+}
+
+function formatDate(ts: { seconds: number; nanoseconds?: number } | number | null | undefined): string {
   if (!ts) return "-";
-  return new Date(ts.seconds * 1000).toLocaleDateString("pt-BR", {
+  const d = new Date(tsToMs(ts));
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -50,7 +60,7 @@ const AdminAlunoHorasModal: React.FC<Props> = ({ aluno, certificados, open, onOp
 
     return certificados
       .filter((cert) => cert.uid === aluno.id)
-      .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+      .sort((a, b) => tsToMs(b.createdAt) - tsToMs(a.createdAt));
   }, [aluno, certificados]);
 
   const resumo = useMemo(() => {

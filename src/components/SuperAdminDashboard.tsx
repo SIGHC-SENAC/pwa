@@ -70,8 +70,15 @@ function getCourseIdsFromAdmin(admin: AdminDoc): string[] {
   return admin.cursoId ? [admin.cursoId] : [];
 }
 
-function getTimestampDate(ts: { seconds: number; nanoseconds: number } | null | undefined): Date | null {
-  if (!ts?.seconds) return null;
+// Aceita Firestore Timestamp { seconds } ou numero em ms/segundos.
+function getTimestampDate(ts: { seconds: number; nanoseconds: number } | number | null | undefined): Date | null {
+  if (!ts) return null;
+  if (typeof ts === "number") {
+    const ms = ts > 1e10 ? ts : ts * 1000;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (!ts.seconds) return null;
   return new Date(ts.seconds * 1000);
 }
 

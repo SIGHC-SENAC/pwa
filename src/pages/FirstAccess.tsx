@@ -45,13 +45,6 @@ const FirstAccess: React.FC = () => {
       return;
     }
     
-    // Valida formato do email
-    const emailRegex = /^[^\s@]+@(edu\.)?pe\.senac\.br$/i;
-    if (!emailRegex.test(email)) {
-      toast.error("Apenas e-mails institucionais (@edu.pe.senac.br ou @pe.senac.br) são permitidos.");
-      return;
-    }
-    
     // Inicia carregamento
     setLoading(true);
     
