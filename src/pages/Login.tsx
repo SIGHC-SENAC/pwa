@@ -61,6 +61,12 @@ const Login: React.FC = () => {
       toast.error("Preencha todos os campos.");
       return;
     }
+
+    const lowerEmail = email.toLowerCase();
+    if (!lowerEmail.endsWith("@edu.pe.senac.br") && !lowerEmail.endsWith("@pe.senac.br")) {
+      toast.error("Acesso permitido apenas para e-mails @edu.pe.senac.br ou @pe.senac.br");
+      return;
+    }
     
     // Define loading como true durante o processo
     setLoading(true);
@@ -153,6 +159,9 @@ const Login: React.FC = () => {
           <div className="mt-4 max-w-sm">
             <p className="text-sm text-primary-foreground/60 leading-relaxed">
               Ambiente acadêmico para gestão e validação de certificados de atividades complementares.
+            </p>
+            <p className="mt-4 text-[11px] font-bold text-yellow-400 uppercase tracking-wider">
+              ESSE SITE É PARA TESTES E NÃO ESTÁ RELACIONADO À INSTITUIÇÃO SENAC
             </p>
           </div>
         </div>

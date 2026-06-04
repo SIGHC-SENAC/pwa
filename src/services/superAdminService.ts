@@ -63,6 +63,11 @@ export async function fetchAdmins(): Promise<AdminUser[]> {
  * @returns Dados do admin criado
  */
 export async function createAdmin(payload: { nome: string; email: string; cursoId?: string; cursoIds?: string[] }): Promise<any> {
+  const emailLower = payload.email.toLowerCase();
+  if (!emailLower.endsWith("@edu.pe.senac.br") && !emailLower.endsWith("@pe.senac.br")) {
+    throw new Error("O e-mail do administrador deve ser do domínio @edu.pe.senac.br ou @pe.senac.br");
+  }
+
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/admins`, {
     method: "POST",
