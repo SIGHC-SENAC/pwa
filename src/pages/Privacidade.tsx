@@ -10,10 +10,11 @@ const Privacidade = () => {
         <section className="space-y-2">
           <h2 className="text-xl font-semibold">1. Introdução</h2>
           <p className="text-muted-foreground leading-relaxed">
-            O aplicativo <strong>SIGHC</strong> (Sistema de Gerenciamento de Horas Complementares) é
-            desenvolvido e mantido pelo IFSP — Instituto Federal de Educação, Ciência e Tecnologia de
-            São Paulo. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e
-            protegemos as informações dos usuários ao utilizar o aplicativo.
+            O aplicativo <strong>SIGHC</strong> (Sistema de Gerenciamento de Horas Complementares) foi
+            desenvolvido pelo grupo <strong>JLLTY</strong> da turma <strong>TADS049</strong>, 
+            do curso de Análise e Desenvolvimento de Sistemas da <strong>Faculdade SENAC</strong>. Esta
+            Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos as
+            informações dos usuários ao utilizar o aplicativo.
           </p>
         </section>
 
@@ -73,7 +74,7 @@ const Privacidade = () => {
           <h2 className="text-xl font-semibold">7. Contato</h2>
           <p className="text-muted-foreground leading-relaxed">
             Para exercer seus direitos ou esclarecer dúvidas sobre esta política, entre em contato com
-            a coordenação responsável pelo sistema SIGHC no IFSP.
+            o grupo responsável pelo desenvolvimento do SIGHC — grupo JLLTY, turma TADS049, Faculdade SENAC.
           </p>
         </section>
 
