@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import FirstAccess from "./pages/FirstAccess";
 import NotFound from "./pages/NotFound";
+import Privacidade from "./pages/Privacidade";
 
 // Cria instância do cliente React Query para gerenciar estado e cache
 const queryClient = new QueryClient();
@@ -49,6 +50,8 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             {/* Rota para primeiro acesso */}
             <Route path="/first-access" element={<FirstAccess />} />
+            {/* Rota para política de privacidade */}
+            <Route path="/privacidade" element={<Privacidade />} />
             {/* Rota padrão para páginas não encontradas */}
             <Route path="*" element={<NotFound />} />
           </Routes>
