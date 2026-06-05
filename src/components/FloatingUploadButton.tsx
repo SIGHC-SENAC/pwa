@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Upload, Send, Loader2, Info } from "lucide-react";
+import { Upload, Send, Loader2, Info, ChevronRight, ScanText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -50,6 +50,11 @@ interface FloatingUploadButtonProps {
   onSuccess?: () => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  step?: "anexo" | "informacoes";
+  ocrText?: string;
+  ocrLoading?: boolean;
+  onNextStep?: () => void;
+  onBack?: () => void;
 }
 
 const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
@@ -69,6 +74,11 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
   gruposAtividades,
   cursoId = "",
   onCursoChange,
+  step = "anexo",
+  ocrText = "",
+  ocrLoading = false,
+  onNextStep,
+  onBack,
 }) => {
   const [openInternal, setOpenInternal] = useState(false);
   const [grupoId, setGrupoId] = useState("");
@@ -99,6 +109,13 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
     }
   }, [categoriaId, gruposDisponiveis]);
 
+  // Reset grupoId when step goes back to anexo
+  useEffect(() => {
+    if (step === "anexo") {
+      setGrupoId("");
+    }
+  }, [step]);
+
   const categoriaInfo = categoriaId ? findAtividadeInGrupos(gruposDisponiveis, categoriaId) : null;
   const grupoSelecionado = gruposDisponiveis.find((grupo) => grupo.id === grupoId);
 
@@ -107,14 +124,52 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
     onCategoriaChange("");
   };
 
-  const content = (
+  const stepIndicator = (
+    <div className="mb-1 flex items-center gap-2">
+      <div
+        className={`flex items-center gap-1.5 text-sm font-medium ${
+          step === "anexo" ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        <span
+          className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${
+            step === "anexo" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          1
+        </span>
+        Anexo
+      </div>
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+      <div
+        className={`flex items-center gap-1.5 text-sm font-medium ${
+          step === "informacoes" ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        <span
+          className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${
+            step === "informacoes"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          2
+        </span>
+        Informações
+      </div>
+    </div>
+  );
+
+  const step1Content = (
     <div className="space-y-4">
+      {stepIndicator}
+
       {cursos.length > 0 && onCursoChange && (
         <div>
           <label className="text-sm font-medium text-foreground">
             Curso <span className="text-destructive">*</span>
           </label>
-          <Select value={cursoId} onValueChange={onCursoChange} disabled={uploading}>
+          <Select value={cursoId} onValueChange={onCursoChange} disabled={ocrLoading}>
             <SelectTrigger className="mt-1.5">
               <SelectValue placeholder="Selecione o curso..." />
             </SelectTrigger>
@@ -129,15 +184,72 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
         </div>
       )}
 
+      <UploadDropzone
+        file={file}
+        onFileSelect={onFileSelect}
+        onFileRemove={onFileRemove}
+        disabled={ocrLoading}
+      />
+
+      {ocrLoading && (
+        <div className="animate-fade-in space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Enviando e analisando documento...</span>
+            <span className="font-medium text-foreground">{progress}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </div>
+      )}
+
+      <Button
+        onClick={onNextStep}
+        disabled={!file || (cursos.length > 0 && !cursoId) || ocrLoading}
+        className="w-full"
+        size="lg"
+      >
+        {ocrLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Processando...
+          </>
+        ) : (
+          <>
+            Próxima etapa
+            <ChevronRight className="h-4 w-4" />
+          </>
+        )}
+      </Button>
+    </div>
+  );
+
+  const step2Content = (
+    <div className="space-y-4">
+      {stepIndicator}
+
+      <div>
+        <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+          <ScanText className="h-3.5 w-3.5 text-primary" />
+          Texto extraído automaticamente
+        </label>
+        {ocrText ? (
+          <div className="mt-1.5 max-h-28 overflow-y-auto rounded-md border border-border bg-muted/40 p-2.5 font-mono text-xs leading-relaxed text-muted-foreground">
+            {ocrText}
+          </div>
+        ) : (
+          <div className="mt-1.5 rounded-md border border-dashed border-border bg-muted/30 p-3 text-center text-xs text-muted-foreground">
+            Nenhum texto foi extraído automaticamente deste documento.
+          </div>
+        )}
+        <p className="mt-1 text-xs text-muted-foreground">
+          Use como referência para preencher as informações abaixo.
+        </p>
+      </div>
+
       <div>
         <label className="text-sm font-medium text-foreground">
           Tipo de atividade <span className="text-destructive">*</span>
         </label>
-        <Select
-          value={grupoId}
-          onValueChange={handleGrupoChange}
-          disabled={uploading}
-        >
+        <Select value={grupoId} onValueChange={handleGrupoChange} disabled={uploading}>
           <SelectTrigger className="mt-1.5">
             <SelectValue placeholder="Selecione o tipo..." />
           </SelectTrigger>
@@ -199,13 +311,6 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
         )}
       </div>
 
-      <UploadDropzone
-        file={file}
-        onFileSelect={onFileSelect}
-        onFileRemove={onFileRemove}
-        disabled={uploading}
-      />
-
       <div>
         <label className="text-sm font-medium text-foreground" htmlFor="obs-modal">
           Observação <span className="font-normal text-muted-foreground">(opcional)</span>
@@ -225,36 +330,44 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
         </p>
       </div>
 
-      {uploading && (
-        <div className="animate-fade-in space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Enviando...</span>
-            <span className="font-medium text-foreground">{progress}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-      )}
-
-      <Button
-        onClick={onUpload}
-        disabled={!file || !categoriaId || (cursos.length > 0 && !cursoId) || uploading}
-        className="w-full"
-        size="lg"
-      >
-        {uploading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Enviando...
-          </>
-        ) : (
-          <>
-            <Send className="h-4 w-4" />
-            Enviar certificado
-          </>
-        )}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          onClick={onBack}
+          disabled={uploading}
+          variant="outline"
+          size="lg"
+          className="flex-1"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+        <Button
+          onClick={onUpload}
+          disabled={!categoriaId || uploading}
+          size="lg"
+          className="flex-1"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            <>
+              <Send className="h-4 w-4" />
+              Enviar
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
+
+  const content = step === "informacoes" ? step2Content : step1Content;
+  const description =
+    step === "anexo"
+      ? "Selecione o arquivo PDF do certificado"
+      : "Revise o texto extraído e preencha as informações";
 
   if (isMobile) {
     return (
@@ -272,7 +385,7 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
           <DrawerContent className="mx-2 rounded-t-2xl">
             <DrawerHeader>
               <DrawerTitle>Enviar certificado</DrawerTitle>
-              <DrawerDescription>Selecione o tipo, a atividade e o arquivo PDF</DrawerDescription>
+              <DrawerDescription>{description}</DrawerDescription>
             </DrawerHeader>
             <div className="max-h-[80vh] overflow-y-auto px-4 pb-6">{content}</div>
           </DrawerContent>
@@ -296,7 +409,7 @@ const FloatingUploadButton: React.FC<FloatingUploadButtonProps> = ({
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Enviar certificado</DialogTitle>
-            <DialogDescription>Selecione o tipo, a atividade e o arquivo PDF</DialogDescription>
+            <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           {content}
         </DialogContent>

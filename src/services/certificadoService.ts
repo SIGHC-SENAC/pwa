@@ -336,6 +336,29 @@ export async function saveRejectedCertificado(data: {
 }
 
 /**
+ * Envia um PDF para OCR via Google Cloud Vision e retorna o texto extraído.
+ * @param storagePath - Caminho do arquivo no Firebase Storage (deve ser certificados_temp/...)
+ * @param token - JWT do usuário autenticado
+ */
+export async function extrairTextoOcr(
+  storagePath: string,
+  token: string
+): Promise<{ text: string }> {
+  const res = await fetch(`${API_BASE}/certificados/ocr`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ storagePath }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Erro ao executar OCR");
+  return data;
+}
+
+/**
  * Formata o tamanho de arquivo para formato legível
  * @param bytes - Tamanho em bytes
  * @returns String com tamanho formatado (B, KB, ou MB)

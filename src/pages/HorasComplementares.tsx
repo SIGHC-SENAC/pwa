@@ -27,6 +27,7 @@ import { fetchCursoById, Curso } from "@/services/cursoService";
 import {
   uploadCertificado,
   processarCertificado,
+  extrairTextoOcr,
   fetchCertificados,
   saveRejectedCertificado,
   CertificadoMeta,
@@ -81,6 +82,12 @@ const HorasComplementares: React.FC = () => {
   const [categoriaId, setCategoriaId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Estados do fluxo multi-etapa com OCR
+  const [uploadStep, setUploadStep] = useState<"anexo" | "informacoes">("anexo");
+  const [ocrText, setOcrText] = useState("");
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [tempStoragePath, setTempStoragePath] = useState<string | null>(null);
   
   // Estados de dados (certificados e cursos)
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]); // Lista de certificados do aluno
@@ -136,11 +143,72 @@ const HorasComplementares: React.FC = () => {
     setCurso(cursos.find((item) => item.id === cursoId) || cursos[0] || null);
   }, [cursoId, cursos]);
 
+  const resetUploadState = () => {
+    setFile(null);
+    setObservacao("");
+    setCategoriaId("");
+    setProgress(0);
+    setTempStoragePath(null);
+    setUploadStep("anexo");
+    setOcrText("");
+  };
+
   /**
-   * Gerencia o processo de upload e processamento do certificado
+   * Etapa 1→2: faz upload temporário e executa OCR no documento
+   */
+  const handleNextStep = async () => {
+    if (!file || !user) return;
+
+    setOcrLoading(true);
+    setProgress(0);
+
+    try {
+      const { task, storagePath } = uploadCertificado(file, user.uid);
+
+      await new Promise<void>((resolve, reject) => {
+        task.on(
+          "state_changed",
+          (snapshot) => {
+            setProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
+          },
+          (error) => reject(error),
+          () => resolve()
+        );
+      });
+
+      setTempStoragePath(storagePath);
+      setProgress(0);
+
+      // OCR é best-effort: falha não bloqueia o fluxo
+      try {
+        const token = await user.getIdToken();
+        const { text } = await extrairTextoOcr(storagePath, token);
+        setOcrText(text);
+      } catch {
+        setOcrText("");
+        toast.warning("Não foi possível extrair o texto do documento automaticamente.");
+      }
+
+      setUploadStep("informacoes");
+    } catch {
+      toast.error("Erro ao enviar o arquivo. Tente novamente.");
+      setProgress(0);
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    setUploadStep("anexo");
+    setOcrText("");
+    setTempStoragePath(null);
+  };
+
+  /**
+   * Etapa 2: envia o certificado já carregado para análise e registro
    */
   const handleUpload = async () => {
-    if (!file || !user || !userData || !categoriaId || !cursoId) return;
+    if (!file || !user || !userData || !categoriaId || !cursoId || !tempStoragePath) return;
 
     const cursoSelecionado = cursos.find((item) => item.id === cursoId) || curso;
     const gruposCurso = cursoSelecionado?.regrasAtividades ?? [];
@@ -148,98 +216,70 @@ const HorasComplementares: React.FC = () => {
     const categoriaNome = categoriaInfo ? `${categoriaInfo.id} - ${categoriaInfo.descricao}` : null;
 
     setUploading(true);
-    setProgress(0);
 
     try {
-      const { task, storagePath } = uploadCertificado(file, user.uid);
+      const token = await user.getIdToken();
 
-      task.on(
-        "state_changed",
-        (snapshot) => {
-          setProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
-        },
-        () => {
-          toast.error("Erro ao enviar o arquivo. Tente novamente.");
-          setUploading(false);
-          setProgress(0);
-        },
-        async () => {
-          try {
-            const token = await user.getIdToken();
-
-            // Envia para o backend para extração de dados e validação de segurança
-            const resultado = await processarCertificado(
-              user.uid,
-              storagePath,
-              file.name,
-              token,
-              categoriaId,
-              categoriaNome,
-              cursoSelecionado?.id || cursoId,
-              cursoSelecionado?.nome || null,
-              cursoSelecionado?.codigo || null,
-              user.displayName || userData.nome || "Aluno",
-              user.email || userData.email || "",
-              observacao
-            );
-
-            toast.success("Certificado enviado e validado com sucesso!");
-            setFile(null);
-            setObservacao("");
-            setCategoriaId("");
-            setProgress(0);
-            loadCertificados();
-
-            // Tenta enviar notificação de sucesso (fail-safe)
-            try {
-              await fetch(`${import.meta.env.VITE_API_BASE_URL}/notificacoes/upload-certificado`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  nomeAluno: user.displayName || userData.nome || "Aluno",
-                  nomeArquivo: file.name,
-                  certificadoId: resultado.certificadoId,
-                  cursoId: cursoSelecionado?.id || cursoId,
-                  cursoNome: cursoSelecionado?.nome || null,
-                  categoriaNome,
-                }),
-              });
-            } catch {}
-          } catch (err: any) {
-            const motivo = err.message || "Erro ao validar o certificado";
-            toast.error(motivo);
-
-            // Registra o erro de validação/segurança no histórico como rejeitado automaticamente
-            try {
-              await saveRejectedCertificado({
-                uid: user.uid,
-                nomeAluno: user.displayName || userData.nome || "Aluno",
-                emailAluno: user.email || userData.email || "",
-                nomeArquivo: file.name,
-                motivoRejeicao: motivo,
-                encontrados: err.encontrados,
-                categoriaId,
-                categoriaNome,
-                cursoId: cursoSelecionado?.id || cursoId,
-                cursoNome: cursoSelecionado?.nome || null,
-                cursoCodigo: cursoSelecionado?.codigo || null,
-              });
-              loadCertificados();
-            } catch {}
-
-            setFile(null);
-            setCategoriaId("");
-            setProgress(0);
-          } finally {
-            setUploading(false);
-          }
-        }
+      const resultado = await processarCertificado(
+        user.uid,
+        tempStoragePath,
+        file.name,
+        token,
+        categoriaId,
+        categoriaNome,
+        cursoSelecionado?.id || cursoId,
+        cursoSelecionado?.nome || null,
+        cursoSelecionado?.codigo || null,
+        user.displayName || userData.nome || "Aluno",
+        user.email || userData.email || "",
+        observacao
       );
-    } catch {
-      toast.error("Erro inesperado. Tente novamente.");
+
+      toast.success("Certificado enviado e validado com sucesso!");
+      resetUploadState();
+      loadCertificados();
+
+      // Notificação fail-safe
+      try {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/notificacoes/upload-certificado`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            nomeAluno: user.displayName || userData.nome || "Aluno",
+            nomeArquivo: file.name,
+            certificadoId: resultado.certificadoId,
+            cursoId: cursoSelecionado?.id || cursoId,
+            cursoNome: cursoSelecionado?.nome || null,
+            categoriaNome,
+          }),
+        });
+      } catch {}
+    } catch (err: any) {
+      const motivo = err.message || "Erro ao validar o certificado";
+      toast.error(motivo);
+
+      try {
+        await saveRejectedCertificado({
+          uid: user.uid,
+          nomeAluno: user.displayName || userData.nome || "Aluno",
+          emailAluno: user.email || userData.email || "",
+          nomeArquivo: file.name,
+          motivoRejeicao: motivo,
+          encontrados: err.encontrados,
+          categoriaId,
+          categoriaNome,
+          cursoId: cursoSelecionado?.id || cursoId,
+          cursoNome: cursoSelecionado?.nome || null,
+          cursoCodigo: cursoSelecionado?.codigo || null,
+        });
+        loadCertificados();
+      } catch {}
+
+      resetUploadState();
+    } finally {
       setUploading(false);
     }
   };
@@ -525,7 +565,17 @@ const HorasComplementares: React.FC = () => {
         progress={progress}
         onUpload={handleUpload}
         open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        onOpenChange={(open) => {
+          setUploadOpen(open);
+          if (!open && !uploading && !ocrLoading) {
+            resetUploadState();
+          }
+        }}
+        step={uploadStep}
+        ocrText={ocrText}
+        ocrLoading={ocrLoading}
+        onNextStep={handleNextStep}
+        onBack={handleBack}
       />
     </div>
   );
