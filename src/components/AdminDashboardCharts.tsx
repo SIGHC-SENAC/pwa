@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CertificadoMeta } from "@/services/certificadoService";
 import { fetchAllCertificados } from "@/services/adminService";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Bar,
   BarChart,
@@ -60,6 +61,7 @@ const tooltipStyle = {
 };
 
 const AdminDashboardCharts: React.FC<Props> = ({ cursoIds = [] }) => {
+  const isMobile = useIsMobile();
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]);
   const [alunos, setAlunos] = useState<AlunoDoc[]>([]);
   const [loadingCerts, setLoadingCerts] = useState(true);
@@ -293,22 +295,23 @@ const AdminDashboardCharts: React.FC<Props> = ({ cursoIds = [] }) => {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={courseHeight}>
-              <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ top: 12, right: 24, bottom: 4, left: 18 }}>
+              <BarChart data={stats.cursoAlunos} layout="vertical" margin={{ top: 12, right: isMobile ? 12 : 24, bottom: 4, left: isMobile ? 4 : 18 }}>
                 <CartesianGrid horizontal={true} vertical={false} stroke={COLORS.grid} />
                 <XAxis
                   type="number"
                   allowDecimals={false}
                   axisLine={{ stroke: COLORS.border }}
                   tickLine={false}
-                  tick={{ fill: COLORS.muted, fontSize: 12 }}
+                  tick={{ fill: COLORS.muted, fontSize: isMobile ? 10 : 12 }}
                 />
                 <YAxis
                   type="category"
                   dataKey="curso"
-                  width={150}
+                  width={isMobile ? 90 : 150}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: COLORS.muted, fontSize: 12 }}
+                  tick={{ fill: COLORS.muted, fontSize: isMobile ? 10 : 12 }}
+                  tickFormatter={(v: string) => isMobile && v.length > 13 ? v.slice(0, 13) + "…" : v}
                 />
                 <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value} alunos`, "Total"]} />
                 <Bar dataKey="total" fill={COLORS.blue} radius={[0, 8, 8, 0]} barSize={18} />
@@ -338,22 +341,23 @@ const AdminDashboardCharts: React.FC<Props> = ({ cursoIds = [] }) => {
         ) : (
           <div className="overflow-hidden">
             <ResponsiveContainer width="100%" height={alunoHeight}>
-              <BarChart data={alunoChartData} layout="vertical" margin={{ top: 12, right: 24, bottom: 4, left: 36 }}>
+              <BarChart data={alunoChartData} layout="vertical" margin={{ top: 12, right: isMobile ? 12 : 24, bottom: 4, left: isMobile ? 4 : 36 }}>
                 <CartesianGrid horizontal={true} vertical={false} stroke={COLORS.grid} />
                 <XAxis
                   type="number"
                   allowDecimals={false}
                   axisLine={{ stroke: COLORS.border }}
                   tickLine={false}
-                  tick={{ fill: COLORS.muted, fontSize: 12 }}
+                  tick={{ fill: COLORS.muted, fontSize: isMobile ? 10 : 12 }}
                 />
                 <YAxis
                   type="category"
                   dataKey="nome"
-                  width={190}
+                  width={isMobile ? 110 : 190}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: COLORS.text, fontSize: 12 }}
+                  tick={{ fill: COLORS.text, fontSize: isMobile ? 10 : 12 }}
+                  tickFormatter={(v: string) => isMobile && v.length > 16 ? v.slice(0, 16) + "…" : v}
                 />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="Aprovados" stackId="status" fill={COLORS.green} barSize={18} radius={[8, 0, 0, 8]} />

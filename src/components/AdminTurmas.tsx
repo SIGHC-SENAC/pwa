@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -27,35 +26,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Users2, Search, CalendarRange } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  Users2,
+  Search,
+  CalendarRange,
+  ArrowLeft,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
 import { fetchTurmas, createTurma, updateTurma, deleteTurma, Turma } from "@/services/turmaService";
 import { fetchCursos, Curso } from "@/services/cursoService";
+import { cn } from "@/lib/utils";
+
+type Step = "curso" | "turmas";
 
 const AdminTurmas: React.FC = () => {
-  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [step, setStep] = useState<Step>("curso");
+  const [selectedCurso, setSelectedCurso] = useState<Curso | null>(null);
+
   const [cursos, setCursos] = useState<Curso[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+
   const [loadingCursos, setLoadingCursos] = useState(true);
+  const [loadingTurmas, setLoadingTurmas] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [filtroCursoId, setFiltroCursoId] = useState("todos");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Turma | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Turma | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Form
   const [nome, setNome] = useState("");
-  const [cursoId, setCursoId] = useState("");
   const [horario, setHorario] = useState("");
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFinal, setPeriodoFinal] = useState("");
@@ -63,8 +71,7 @@ const AdminTurmas: React.FC = () => {
   const loadCursos = useCallback(async () => {
     setLoadingCursos(true);
     try {
-      const data = await fetchCursos();
-      setCursos(data);
+      setCursos(await fetchCursos());
     } catch {
       toast.error("Erro ao carregar cursos.");
     } finally {
@@ -72,31 +79,36 @@ const AdminTurmas: React.FC = () => {
     }
   }, []);
 
-  const loadTurmas = useCallback(async () => {
-    setLoading(true);
+  const loadTurmas = useCallback(async (cId: string) => {
+    setLoadingTurmas(true);
     try {
-      const cursoFilter = filtroCursoId === "todos" ? undefined : filtroCursoId;
-      const data = await fetchTurmas(cursoFilter);
-      setTurmas(data);
+      setTurmas(await fetchTurmas(cId));
     } catch {
       toast.error("Erro ao carregar turmas.");
     } finally {
-      setLoading(false);
+      setLoadingTurmas(false);
     }
-  }, [filtroCursoId]);
+  }, []);
 
-  useEffect(() => {
-    loadCursos();
-  }, [loadCursos]);
+  useEffect(() => { loadCursos(); }, [loadCursos]);
 
-  useEffect(() => {
-    loadTurmas();
-  }, [loadTurmas]);
+  const selectCurso = (curso: Curso) => {
+    setSelectedCurso(curso);
+    setStep("turmas");
+    setSearchTerm("");
+    if (curso.id) loadTurmas(curso.id);
+  };
+
+  const goBack = () => {
+    setStep("curso");
+    setSelectedCurso(null);
+    setTurmas([]);
+    setSearchTerm("");
+  };
 
   const openNew = () => {
     setEditing(null);
     setNome("");
-    setCursoId("");
     setHorario("");
     setPeriodoInicio("");
     setPeriodoFinal("");
@@ -106,7 +118,6 @@ const AdminTurmas: React.FC = () => {
   const openEdit = (turma: Turma) => {
     setEditing(turma);
     setNome(turma.nome);
-    setCursoId(turma.cursoId);
     setHorario(turma.horario);
     setPeriodoInicio(turma.periodoInicio);
     setPeriodoFinal(turma.periodoFinal);
@@ -114,7 +125,7 @@ const AdminTurmas: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!nome.trim() || !cursoId || !horario.trim() || !periodoInicio.trim() || !periodoFinal.trim()) {
+    if (!nome.trim() || !horario || !periodoInicio.trim() || !periodoFinal.trim()) {
       toast.error("Preencha todos os campos.");
       return;
     }
@@ -122,8 +133,8 @@ const AdminTurmas: React.FC = () => {
     try {
       const payload = {
         nome: nome.trim(),
-        cursoId,
-        horario: horario.trim(),
+        cursoId: selectedCurso!.id!,
+        horario,
         periodoInicio: periodoInicio.trim(),
         periodoFinal: periodoFinal.trim(),
       };
@@ -135,7 +146,7 @@ const AdminTurmas: React.FC = () => {
         toast.success("Turma cadastrada.");
       }
       setDialogOpen(false);
-      loadTurmas();
+      if (selectedCurso?.id) loadTurmas(selectedCurso.id);
     } catch (err: any) {
       toast.error(err.message || "Erro ao salvar turma.");
     } finally {
@@ -150,7 +161,7 @@ const AdminTurmas: React.FC = () => {
       await deleteTurma(deleteTarget.id);
       toast.success("Turma excluída.");
       setDeleteTarget(null);
-      loadTurmas();
+      if (selectedCurso?.id) loadTurmas(selectedCurso.id);
     } catch (err: any) {
       toast.error(err.message || "Erro ao excluir turma.");
     } finally {
@@ -158,120 +169,172 @@ const AdminTurmas: React.FC = () => {
     }
   };
 
-  const filtered = turmas.filter((t) => {
+  const filtered = useMemo(() => {
+    if (!searchTerm.trim()) return turmas;
     const q = searchTerm.toLowerCase();
-    return (
-      t.nome.toLowerCase().includes(q) ||
-      (t.cursoNome || "").toLowerCase().includes(q) ||
-      (t.cursoCodigo || "").toLowerCase().includes(q)
+    return turmas.filter((t) =>
+      t.nome.toLowerCase().includes(q) || (t.horario || "").toLowerCase().includes(q)
     );
-  });
+  }, [turmas, searchTerm]);
 
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  // ── STEP: CURSO ──────────────────────────────────────────────────────────────
+  if (step === "curso") {
+    return (
+      <div className="space-y-4">
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Users2 className="h-5 w-5 text-primary" />
             Gestão de Turmas
           </h2>
           <p className="text-sm text-muted-foreground">
-            Cadastre e gerencie as turmas vinculadas aos cursos.
+            Selecione um curso para gerenciar suas turmas.
           </p>
         </div>
-        <Button onClick={openNew} disabled={loadingCursos || cursos.length === 0} className="gap-2 shrink-0">
+
+        {loadingCursos ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted" />
+            ))}
+          </div>
+        ) : cursos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center">
+            <Users2 className="h-10 w-10 text-muted-foreground/40" />
+            <p className="mt-4 text-sm font-medium text-foreground">Nenhum curso cadastrado</p>
+            <p className="mt-1 text-xs text-muted-foreground">Cadastre um curso primeiro.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {cursos.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => selectCurso(c)}
+                className={cn(
+                  "group relative flex flex-col gap-3 rounded-2xl border bg-card p-6 text-left shadow-sm",
+                  "transition-all duration-150 hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                )}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {c.codigo}
+                </p>
+                <p className="text-base font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
+                  {c.nome}
+                </p>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight className="h-4 w-4 text-primary" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── STEP: TURMAS ─────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0">
+            <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <button onClick={goBack} className="hover:text-foreground transition-colors">
+                Cursos
+              </button>
+              <span className="text-muted-foreground/50">/</span>
+              <span className="font-semibold text-foreground">{selectedCurso?.codigo}</span>
+            </nav>
+            <p className="text-base font-bold text-foreground">{selectedCurso?.nome}</p>
+          </div>
+        </div>
+        <Button onClick={openNew} className="gap-2 shrink-0">
           <Plus className="h-4 w-4" />
           Nova Turma
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 max-w-2xl">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar turma..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={filtroCursoId} onValueChange={setFiltroCursoId}>
-          <SelectTrigger className="w-full sm:w-[220px]">
-            <SelectValue placeholder="Filtrar por curso" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os cursos</SelectItem>
-            {cursos.map((c) => (
-              <SelectItem key={c.id || c.codigo} value={c.id || c.codigo}>
-                {c.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar turma..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
-      {/* Table */}
-      <Card className="shadow-sm overflow-hidden">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-              <Users2 className="h-10 w-10 text-muted-foreground/30 mb-3" />
-              <p className="text-sm text-muted-foreground">
-                {turmas.length === 0 ? "Nenhuma turma cadastrada." : "Nenhum resultado encontrado."}
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Turma</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead className="hidden sm:table-cell">Horário</TableHead>
-                  <TableHead className="hidden md:table-cell">Período</TableHead>
-                  <TableHead className="w-[100px] text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((turma) => (
-                  <TableRow key={turma.id}>
-                    <TableCell className="font-medium">{turma.nome}</TableCell>
-                    <TableCell>
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                        {turma.cursoNome || turma.cursoCodigo || "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
-                      {turma.horario}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant="outline" className="gap-1">
-                        <CalendarRange className="h-3 w-3" />
-                        {turma.periodoInicio} — {turma.periodoFinal}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(turma)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(turma)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      {/* Turmas grid */}
+      {loadingTurmas ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center">
+          <Users2 className="h-10 w-10 text-muted-foreground/40" />
+          <p className="mt-4 text-sm font-medium text-foreground">
+            {turmas.length === 0 ? "Nenhuma turma neste curso." : "Nenhum resultado encontrado."}
+          </p>
+          {turmas.length === 0 && (
+            <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={openNew}>
+              <Plus className="h-3.5 w-3.5" />
+              Criar primeira turma
+            </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered
+            .slice()
+            .sort((a, b) => a.nome.localeCompare(b.nome))
+            .map((turma) => (
+              <div
+                key={turma.id}
+                className="group flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-base font-bold text-foreground leading-snug">{turma.nome}</p>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost" size="icon" className="h-7 w-7"
+                      onClick={() => openEdit(turma)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(turma)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-xs text-muted-foreground">
+                  {turma.horario && (
+                    <p className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3 shrink-0" />
+                      {turma.horario}
+                    </p>
+                  )}
+                  {turma.periodoInicio && turma.periodoFinal && (
+                    <p className="flex items-center gap-1.5">
+                      <CalendarRange className="h-3 w-3 shrink-0" />
+                      {turma.periodoInicio} — {turma.periodoFinal}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -280,31 +343,16 @@ const AdminTurmas: React.FC = () => {
             <DialogTitle>{editing ? "Editar Turma" : "Nova Turma"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Nome da turma</label>
-              <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Turma A - 2025" />
+            <div className="rounded-md bg-muted/60 border border-border/60 px-3 py-2 text-xs text-muted-foreground">
+              Curso: <span className="font-semibold text-foreground">{selectedCurso?.nome}</span>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Curso</label>
-              {loadingCursos ? (
-                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando cursos...
-                </div>
-              ) : (
-                <Select value={cursoId} onValueChange={setCursoId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um curso" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cursos.map((c) => (
-                      <SelectItem key={c.id || c.codigo} value={c.id || c.codigo}>
-                        {c.nome} — {c.codigo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <label className="text-sm font-medium text-foreground">Nome da turma</label>
+              <Input
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Ex: Turma A - 2025"
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Horário</label>
@@ -322,11 +370,19 @@ const AdminTurmas: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Período início</label>
-                <Input value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} placeholder="Ex: 2025.1" />
+                <Input
+                  value={periodoInicio}
+                  onChange={(e) => setPeriodoInicio(e.target.value)}
+                  placeholder="Ex: 2025.1"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Período final</label>
-                <Input value={periodoFinal} onChange={(e) => setPeriodoFinal(e.target.value)} placeholder="Ex: 2027.2" />
+                <Input
+                  value={periodoFinal}
+                  onChange={(e) => setPeriodoFinal(e.target.value)}
+                  placeholder="Ex: 2027.2"
+                />
               </div>
             </div>
           </div>
@@ -351,7 +407,11 @@ const AdminTurmas: React.FC = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
               {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
               Excluir
             </AlertDialogAction>

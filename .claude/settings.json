@@ -4,7 +4,8 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\joaov\\\\OneDrive\\\\Documentos\\\\GitHub\\\\SIGHC\\\\backend\\\\functions\\\\controllers\" -Recurse -Force)",
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\joaov\\\\OneDrive\\\\Documentos\\\\GitHub\\\\SIGHC\\\\backend\\\\functions\\\\routes\" -Recurse -Force)",
-      "Bash(Select-String -Pattern \"FloatingUploadButton|HorasComplementares|uploadError\")"
+      "Bash(Select-String -Pattern \"FloatingUploadButton|HorasComplementares|uploadError\")",
+      "Bash(dir /s /b c:\\\\Users\\\\joaov\\\\OneDrive\\\\Documentos\\\\GitHub\\\\SIGHC\\\\pwa)"
     ],
     "additionalDirectories": [
       "c:\\Users\\joaov\\OneDrive\\Documentos\\GitHub\\SIGHC\\backend\\functions\\routes",

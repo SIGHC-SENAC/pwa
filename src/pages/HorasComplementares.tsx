@@ -9,10 +9,19 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  Menu,
   ShieldAlert,
   Upload,
   User,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { findAtividadeInGrupos } from "@/services/cursoService";
@@ -75,6 +84,7 @@ const HorasComplementares: React.FC = () => {
   // Estados de navegação e interface
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Estados para o formulário de upload
   const [file, setFile] = useState<File | null>(null);
@@ -387,6 +397,58 @@ const HorasComplementares: React.FC = () => {
     .toUpperCase();
 
   const activeItem = navItems.find((item) => item.id === activeTab)!;
+
+  const renderSidebarContent = (isMobileSidebar = false) => (
+    <>
+      <div className="px-4 pt-5 pb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Menu</p>
+      </div>
+      <nav className="flex flex-1 flex-col gap-0.5 px-2">
+        {navItems.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setActiveTab(id);
+                if (isMobileSidebar) setMobileMenuOpen(false);
+              }}
+              className={`
+                group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium
+                transition-all duration-150
+                ${isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                }
+              `}
+            >
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="truncate">{label}</span>
+              {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="mx-3 my-3 h-px bg-border" />
+      <div className="px-3 pb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-full gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={async () => {
+            if (isMobileSidebar) setMobileMenuOpen(false);
+            await signOut(auth);
+            navigate("/login");
+          }}
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Sair
+        </Button>
+      </div>
+    </>
+  );;
   // Filtra certificados exibidos baseado no curso selecionado no seletor do dashboard
   const certificadosDoCurso = cursoId
     ? certificados.filter((certificado) => !certificado.cursoId || certificado.cursoId === cursoId)
@@ -405,6 +467,23 @@ const HorasComplementares: React.FC = () => {
         {/* Cabeçalho superior com Logo e Perfil */}
         <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex min-w-0 items-center gap-3">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden shrink-0">
+                  <Menu className="h-4 w-4" />
+                  <span className="sr-only">Abrir menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0 sm:max-w-none">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Menu de navegação</SheetTitle>
+                  <SheetDescription>Navegue entre as seções do painel.</SheetDescription>
+                </SheetHeader>
+                <div className="flex h-full flex-col bg-card">
+                  {renderSidebarContent(true)}
+                </div>
+              </SheetContent>
+            </Sheet>
             <img src={senacLogo} alt="Senac Pernambuco" className="h-9 w-auto object-contain sm:h-10" />
             <div className="hidden h-8 w-px bg-border sm:block" />
             <div className="hidden min-w-0 sm:block">
@@ -438,91 +517,8 @@ const HorasComplementares: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Barra Lateral de Navegação (Desktop) */}
         <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r bg-card md:flex">
-          <div className="px-4 pb-2 pt-5">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-              Menu
-            </p>
-          </div>
-
-          <nav className="flex flex-1 flex-col gap-0.5 px-2">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`
-                    group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium
-                    transition-all duration-150
-                    ${isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
-                    }
-                  `}
-                >
-                  <span
-                    className={`
-                      flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors
-                      ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"}
-                    `}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="truncate">{label}</span>
-                  {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="mx-3 my-3 h-px bg-border" />
-
-          <div className="px-3 pb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-full gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={async () => {
-                await signOut(auth);
-                navigate("/login");
-              }}
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sair
-            </Button>
-          </div>
+          {renderSidebarContent()}
         </aside>
-
-        {/* Menu de Navegação Inferior (Mobile) */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-card shadow-[0_-1px_8px_rgba(0,0,0,0.08)] md:hidden">
-          <div className="flex">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className="flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors"
-                >
-                  <span
-                    className={`
-                      flex h-6 w-6 items-center justify-center rounded-md transition-colors
-                      ${isActive ? "text-primary" : "text-muted-foreground"}
-                    `}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-                    {label}
-                  </span>
-                  {isActive && <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         <main className="min-w-0 flex-1 overflow-y-auto bg-background">
           {/* Cabeçalho da Seção Ativa */}
@@ -553,7 +549,7 @@ const HorasComplementares: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-6 px-4 py-5 pb-24 sm:px-8 sm:py-6 md:pb-8">
+          <div className="space-y-6 px-4 py-5 pb-8 sm:px-8 sm:py-6">
             
             {/* CONTEÚDO DA ABA: DASHBOARD */}
             {activeTab === "dashboard" && (

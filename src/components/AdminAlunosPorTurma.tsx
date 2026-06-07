@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchAlunos, fetchCursoById, type Aluno, type Curso } from "@/services/cursoService";
+import { fetchAlunos, fetchCursoById, fetchCursos, type Aluno, type Curso } from "@/services/cursoService";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchTurmas, type Turma } from "@/services/turmaService";
 import AdminAlunoHorasModal from "@/components/AdminAlunoHorasModal";
@@ -28,6 +28,7 @@ type Step = "curso" | "turma" | "alunos";
 type Props = {
   cursoId?: string;
   cursoIds?: string[];
+  showAll?: boolean;
 };
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ type Props = {
 
 // ── main component ───────────────────────────────────────────────────────────
 
-const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
+const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds, showAll = false }) => {
   const { userData } = useAuth();
 
   const allIds = useMemo(
@@ -65,6 +66,22 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
 
   // ── initial load: courses ────────────────────────────────────────────────
   useEffect(() => {
+    // Modo showAll: busca todos os cursos quando não há IDs específicos
+    if (allIds.length === 0 && showAll) {
+      setLoadingCursos(true);
+      fetchCursos()
+        .then((list) => {
+          setCursos(list);
+          if (list.length === 1) {
+            setSelectedCurso(list[0]);
+            setStep("turma");
+          }
+        })
+        .catch(() => setCursos([]))
+        .finally(() => setLoadingCursos(false));
+      return;
+    }
+
     if (allIds.length === 0) { setLoadingCursos(false); return; }
 
     // Usa userData.cursos se disponível (evita chamadas extras ao Firestore).
@@ -100,7 +117,7 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
         }
       })
       .finally(() => setLoadingCursos(false));
-  }, [allIds, userData?.cursos]);
+  }, [allIds, userData?.cursos, showAll]);
 
   // ── fetch turmas when course changes ────────────────────────────────────
   useEffect(() => {
@@ -206,7 +223,7 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
   };
 
   // ── empty guard ──────────────────────────────────────────────────────────
-  if (allIds.length === 0) {
+  if (allIds.length === 0 && !showAll) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center">
         <GraduationCap className="h-10 w-10 text-muted-foreground/40" />

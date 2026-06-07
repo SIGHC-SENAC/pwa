@@ -7,6 +7,7 @@ import { fetchAllCertificados } from "@/services/adminService";
 import { CertificadoMeta } from "@/services/certificadoService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
@@ -123,6 +124,7 @@ function getActivityAccent(type: ActivityItem["type"]): string {
 }
 
 const SuperAdminDashboard: React.FC = () => {
+  const isMobile = useIsMobile();
   const [cursos,       setCursos]       = useState<Curso[]>([]);
   const [turmas,       setTurmas]       = useState<Turma[]>([]);
   const [alunos,       setAlunos]       = useState<AlunoDoc[]>([]);
@@ -351,13 +353,13 @@ const SuperAdminDashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {kpis.map(({ label, value, icon: Icon, bg, color }) => (
           <Card key={label} className="shadow-sm border">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${bg}`}>
-                <Icon className={`h-6 w-6 ${color}`} />
+            <CardContent className="p-3 sm:p-5 flex items-center gap-3 sm:gap-4">
+              <div className={`flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${bg}`}>
+                <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${color}`} />
               </div>
-              <div>
-                <p className="text-3xl font-bold text-foreground leading-tight">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+              <div className="min-w-0">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">{label}</p>
               </div>
             </CardContent>
           </Card>
@@ -382,10 +384,16 @@ const SuperAdminDashboard: React.FC = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(220, alunosPorCurso.length * 40)}>
-                <BarChart data={alunosPorCurso} layout="vertical" margin={{ left: 8, right: 20 }}>
+                <BarChart data={alunosPorCurso} layout="vertical" margin={{ left: isMobile ? 2 : 8, right: isMobile ? 12 : 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis type="category" dataKey="curso" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis
+                    type="category"
+                    dataKey="curso"
+                    width={isMobile ? 90 : 140}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickFormatter={(v: string) => isMobile && v.length > 13 ? v.slice(0, 13) + "…" : v}
+                  />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} alunos`, "Total"]} />
                   <Bar dataKey="total" radius={[0, 6, 6, 0]} barSize={20}>
                     {alunosPorCurso.map((_, i) => (
@@ -413,10 +421,16 @@ const SuperAdminDashboard: React.FC = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(220, turmasPorCurso.length * 40)}>
-                <BarChart data={turmasPorCurso} layout="vertical" margin={{ left: 8, right: 20 }}>
+                <BarChart data={turmasPorCurso} layout="vertical" margin={{ left: isMobile ? 2 : 8, right: isMobile ? 12 : 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis type="category" dataKey="curso" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis
+                    type="category"
+                    dataKey="curso"
+                    width={isMobile ? 90 : 140}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickFormatter={(v: string) => isMobile && v.length > 13 ? v.slice(0, 13) + "…" : v}
+                  />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} turmas`, "Total"]} />
                   <Bar dataKey="total" radius={[0, 6, 6, 0]} barSize={20}>
                     {turmasPorCurso.map((_, i) => (

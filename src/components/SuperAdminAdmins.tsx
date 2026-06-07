@@ -198,35 +198,43 @@ const SuperAdminAdmins: React.FC = () => {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Cursos</TableHead>
-                  <TableHead className="w-[100px] text-right">Acoes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((admin) => (
-                  <TableRow key={admin.id}>
-                    <TableCell className="font-medium">{admin.nome}</TableCell>
-                    <TableCell className="text-muted-foreground">{admin.email}</TableCell>
-                    <TableCell className="text-muted-foreground">{cursosLabel(admin)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(admin)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(admin)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="hidden sm:table-cell">E-mail</TableHead>
+                    <TableHead className="hidden md:table-cell">Cursos</TableHead>
+                    <TableHead className="w-[100px] text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <p>{admin.nome}</p>
+                          <p className="sm:hidden text-xs text-muted-foreground truncate max-w-[180px]">{admin.email}</p>
+                          <p className="md:hidden sm:block text-xs text-muted-foreground truncate max-w-[180px]">{cursosLabel(admin)}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">{admin.email}</TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">{cursosLabel(admin)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(admin)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(admin)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   LogOut,
   BookOpen,
+  Menu,
   Users,
   Shield,
   Crown,
@@ -16,10 +17,18 @@ import {
   User,
   LayoutDashboard,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import NotificationBell from "@/components/NotificationBell";
 import AdminCursos from "@/components/AdminCursos";
 import AdminTurmas from "@/components/AdminTurmas";
-import AdminAddAluno from "@/components/AdminAddAluno";
+import AdminAlunosPorTurma from "@/components/AdminAlunosPorTurma";
 import SuperAdminAdmins from "@/components/SuperAdminAdmins";
 import SuperAdminDashboard from "@/components/SuperAdminDashboard";
 
@@ -40,6 +49,7 @@ const SuperAdmin: React.FC = () => {
   const navigate = useNavigate();
   const isSuperAdmin = userData?.role === "superAdmin";
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -72,6 +82,58 @@ const SuperAdmin: React.FC = () => {
 
   const activeItem = navItems.find((n) => n.id === activeTab)!;
   const displayName = userData?.nome || user.displayName || "SuperAdmin";
+
+  const renderSidebarContent = (isMobileSidebar = false) => (
+    <>
+      <div className="px-4 pt-5 pb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Menu</p>
+      </div>
+      <nav className="flex flex-col gap-0.5 px-2 flex-1">
+        {navItems.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setActiveTab(id);
+                if (isMobileSidebar) setMobileMenuOpen(false);
+              }}
+              className={`
+                group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
+                transition-all duration-150 w-full text-left
+                ${isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                }
+              `}
+            >
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background"}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="truncate">{label}</span>
+              {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="mx-3 my-3 h-px bg-border" />
+      <div className="px-3 pb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+          onClick={async () => {
+            if (isMobileSidebar) setMobileMenuOpen(false);
+            await signOut(auth);
+            navigate("/login");
+          }}
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Sair
+        </Button>
+      </div>
+    </>
+  );
   const initials = displayName.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
@@ -81,6 +143,23 @@ const SuperAdmin: React.FC = () => {
       <header className="sticky top-0 z-40 border-b bg-card shadow-sm shrink-0">
         <div className="flex items-center justify-between px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex items-center gap-3 min-w-0">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden shrink-0">
+                  <Menu className="h-4 w-4" />
+                  <span className="sr-only">Abrir menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0 sm:max-w-none">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Menu de navegação</SheetTitle>
+                  <SheetDescription>Navegue entre as seções do painel.</SheetDescription>
+                </SheetHeader>
+                <div className="flex h-full flex-col bg-card">
+                  {renderSidebarContent(true)}
+                </div>
+              </SheetContent>
+            </Sheet>
             <img src={senacLogo} alt="Senac Pernambuco" className="h-9 sm:h-10 w-auto object-contain" />
             <div className="hidden sm:block h-8 w-px bg-border" />
             <div className="hidden sm:block min-w-0">
@@ -118,97 +197,8 @@ const SuperAdmin: React.FC = () => {
 
         {/* ── Sidebar (desktop) ── */}
         <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-card overflow-y-auto">
-
-          {/* Label de seção */}
-          <div className="px-4 pt-5 pb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-              Menu
-            </p>
-          </div>
-
-          {/* Nav items */}
-          <nav className="flex flex-col gap-0.5 px-2 flex-1">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`
-                    group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
-                    transition-all duration-150 w-full text-left
-                    ${isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
-                    }
-                  `}
-                >
-                  {/* Icon container */}
-                  <span className={`
-                    flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors
-                    ${isActive
-                      ? "bg-white/20"
-                      : "bg-muted group-hover:bg-background"
-                    }
-                  `}>
-                    <Icon className="h-4 w-4" />
-                  </span>
-
-                  <span className="truncate">{label}</span>
-
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/80" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Divider */}
-          <div className="mx-3 my-3 h-px bg-border" />
-
-          <div className="px-3 pb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
-              onClick={async () => { await signOut(auth); navigate("/login"); }}
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sair
-            </Button>
-          </div>
+          {renderSidebarContent()}
         </aside>
-
-        {/* ── Mobile nav (bottom bar) ── */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-card shadow-[0_-1px_8px_rgba(0,0,0,0.08)]">
-          <div className="flex">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className="flex flex-1 flex-col items-center gap-1 py-2.5 transition-colors"
-                >
-                  <span className={`
-                    flex h-6 w-6 items-center justify-center rounded-md transition-colors
-                    ${isActive ? "text-primary" : "text-muted-foreground"}
-                  `}>
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-                    {label}
-                  </span>
-                  {isActive && (
-                    <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* ── Main content ── */}
         <main className="flex-1 min-w-0 overflow-y-auto bg-background">
@@ -225,11 +215,11 @@ const SuperAdmin: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-4 py-5 sm:px-8 sm:py-6 pb-24 md:pb-8 space-y-4">
+          <div className="px-4 py-5 sm:px-8 sm:py-6 pb-8 space-y-4">
             {activeTab === "dashboard" && <SuperAdminDashboard />}
             {activeTab === "cursos"    && <AdminCursos />}
             {activeTab === "turmas"    && <AdminTurmas />}
-            {activeTab === "alunos"    && <AdminAddAluno />}
+            {activeTab === "alunos"    && <AdminAlunosPorTurma showAll />}
             {activeTab === "admins"    && <SuperAdminAdmins />}
           </div>
         </main>

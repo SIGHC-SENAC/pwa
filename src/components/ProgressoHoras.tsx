@@ -196,12 +196,12 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
             {stats.map(({ label, value, color }, i) => (
               <div
                 key={label}
-                className={`flex flex-col items-center gap-1 py-3 px-2 ${i !== 0 ? "border-l" : ""}`}
+                className={`flex flex-col items-center gap-1 py-3 px-1 sm:px-2 ${i !== 0 ? "border-l" : ""}`}
               >
-                <span className={`text-xl font-bold tabular-nums leading-none ${color}`}>
+                <span className={`text-base sm:text-xl font-bold tabular-nums leading-none ${color}`}>
                   {value}
                 </span>
-                <span className="text-[10px] text-muted-foreground leading-none">{label}</span>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-none text-center">{label}</span>
               </div>
             ))}
           </div>
@@ -374,9 +374,9 @@ const ProgressoHoras: React.FC<ProgressoHorasProps> = ({
                           { label: "Pend.",  value: String(atividade.pendentes),    color: atividade.pendentes > 0 ? "text-amber-500" : "text-foreground" },
                           { label: "Envios", value: String(atividade.totalEnvios),  color: "text-foreground" },
                         ].map(({ label, value, color }, i) => (
-                          <div key={label} className={`flex flex-col items-center gap-0.5 py-2.5 ${i !== 0 ? "border-l" : ""} bg-muted/20`}>
-                            <span className={`text-base font-bold tabular-nums leading-none ${color}`}>{value}</span>
-                            <span className="text-[10px] text-muted-foreground leading-none">{label}</span>
+                          <div key={label} className={`flex flex-col items-center gap-0.5 py-2.5 px-1 ${i !== 0 ? "border-l" : ""} bg-muted/20`}>
+                            <span className={`text-sm sm:text-base font-bold tabular-nums leading-none ${color}`}>{value}</span>
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground leading-none text-center">{label}</span>
                           </div>
                         ))}
                       </div>
