@@ -291,7 +291,6 @@ const Admin: React.FC = () => {
         id: navCursos[0].id,
         nome: navCursos[0].nome,
         codigo: navCursos[0].codigo ?? navCursos[0].id,
-        turno: (navCursos[0].turno ?? "tarde") as Curso["turno"],
         cargaHorariaComplementar: 0,
       });
     }
@@ -595,7 +594,7 @@ const Admin: React.FC = () => {
                           {navCursos.map((c) => (
                             <button
                               key={c.id}
-                              onClick={() => handleCertNavSelectCurso({ id: c.id, nome: c.nome, codigo: c.codigo ?? c.id, turno: (c.turno ?? "tarde") as Curso["turno"], cargaHorariaComplementar: 0 })}
+                              onClick={() => handleCertNavSelectCurso({ id: c.id, nome: c.nome, codigo: c.codigo ?? c.id, cargaHorariaComplementar: 0 })}
                               className="group flex items-start gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                             >
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">

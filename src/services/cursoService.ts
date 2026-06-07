@@ -63,8 +63,6 @@ export interface Curso {
   nome: string;
   // Código do curso
   codigo: string;
-  // Turno do curso (manhã, tarde ou noite)
-  turno: "manhã" | "tarde" | "noite";
   // Carga horária mínima de horas complementares exigida
   cargaHorariaComplementar: number;
   // Regras e categorias de atividades permitidas
@@ -184,7 +182,7 @@ export interface Aluno {
   // Array de IDs de cursos (para alunos em múltiplos cursos)
   cursoIds?: string[];
   // Array de objetos com informações detalhadas dos cursos
-  cursos?: Array<{ id: string; nome: string; codigo?: string; turno?: string }>;
+  cursos?: Array<{ id: string; nome: string; codigo?: string }>;
   // ID da turma
   turmaId?: string;
   // Nome da turma

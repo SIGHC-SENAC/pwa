@@ -205,7 +205,7 @@ const AdminTurmas: React.FC = () => {
             <SelectItem value="todos">Todos os cursos</SelectItem>
             {cursos.map((c) => (
               <SelectItem key={c.id || c.codigo} value={c.id || c.codigo}>
-                {c.nome} ({c.turno})
+                {c.nome}
               </SelectItem>
             ))}
           </SelectContent>
@@ -299,7 +299,7 @@ const AdminTurmas: React.FC = () => {
                   <SelectContent>
                     {cursos.map((c) => (
                       <SelectItem key={c.id || c.codigo} value={c.id || c.codigo}>
-                        {c.nome} — {c.codigo} ({c.turno})
+                        {c.nome} — {c.codigo}
                       </SelectItem>
                     ))}
                   </SelectContent>

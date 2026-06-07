@@ -32,11 +32,6 @@ type Props = {
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
-const turnoMeta: Record<string, { label: string; color: string; bg: string }> = {
-  "manhã": { label: "Manhã", color: "text-amber-600",  bg: "bg-amber-50"  },
-  "tarde": { label: "Tarde", color: "text-orange-600", bg: "bg-orange-50" },
-  "noite": { label: "Noite", color: "text-indigo-600", bg: "bg-indigo-50" },
-};
 
 // ── main component ───────────────────────────────────────────────────────────
 
@@ -75,7 +70,7 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
     // Usa userData.cursos se disponível (evita chamadas extras ao Firestore).
     const cursosFromUserData = userData?.cursos
       ?.filter((c) => allIds.includes(c.id))
-      .map((c) => ({ id: c.id, nome: c.nome, codigo: c.codigo ?? c.id, turno: (c.turno ?? "tarde") as Curso["turno"], cargaHorariaComplementar: 0 } as Curso));
+      .map((c) => ({ id: c.id, nome: c.nome, codigo: c.codigo ?? c.id, cargaHorariaComplementar: 0 } as Curso));
 
     if (cursosFromUserData && cursosFromUserData.length > 0) {
       setCursos(cursosFromUserData);
@@ -94,7 +89,6 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
         id,
         nome: id,
         codigo: id,
-        turno: "tarde" as Curso["turno"],
         cargaHorariaComplementar: 0,
       } as Curso))
     ))
@@ -285,7 +279,6 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cursos.map((c) => {
-            const meta = turnoMeta[c.turno] ?? turnoMeta["tarde"];
             return (
               <button
                 key={c.id}
@@ -334,7 +327,6 @@ const AdminAlunosPorTurma: React.FC<Props> = ({ cursoId, cursoIds }) => {
             <p className="mt-1 text-base font-bold text-foreground">{selectedCurso?.nome}</p>
             <p className="text-xs text-muted-foreground">
               {selectedCurso?.codigo}
-              {selectedCurso?.turno && ` · ${turnoMeta[selectedCurso.turno]?.label ?? selectedCurso.turno}`}
             </p>
           </div>
         </div>

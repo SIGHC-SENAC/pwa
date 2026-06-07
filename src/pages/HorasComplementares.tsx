@@ -17,7 +17,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { findAtividadeInGrupos } from "@/services/cursoService";
 import { Button } from "@/components/ui/button";
-import DashboardCards from "@/components/DashboardCards";
 import FloatingUploadButton from "@/components/FloatingUploadButton";
 import HistoricoCertificados from "@/components/HistoricoCertificados";
 import CardOrientacoes from "@/components/CardOrientacoes";
@@ -28,6 +27,7 @@ import {
   uploadCertificado,
   processarCertificado,
   extrairTextoOcr,
+  analisarComIA,
   fetchCertificados,
   saveRejectedCertificado,
   CertificadoMeta,
@@ -78,7 +78,6 @@ const HorasComplementares: React.FC = () => {
 
   // Estados para o formulário de upload
   const [file, setFile] = useState<File | null>(null);
-  const [observacao, setObservacao] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -87,7 +86,11 @@ const HorasComplementares: React.FC = () => {
   const [uploadStep, setUploadStep] = useState<"anexo" | "informacoes">("anexo");
   const [ocrText, setOcrText] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [tempStoragePath, setTempStoragePath] = useState<string | null>(null);
+  const [aiSuggestion, setAiSuggestion] = useState<{ grupoId: string; categoriaId: string } | null>(null);
   
   // Estados de dados (certificados e cursos)
   const [certificados, setCertificados] = useState<CertificadoMeta[]>([]); // Lista de certificados do aluno
@@ -145,12 +148,15 @@ const HorasComplementares: React.FC = () => {
 
   const resetUploadState = () => {
     setFile(null);
-    setObservacao("");
     setCategoriaId("");
     setProgress(0);
     setTempStoragePath(null);
     setUploadStep("anexo");
     setOcrText("");
+    setOcrError(false);
+    setUploadError(null);
+    setUploadSuccess(false);
+    setAiSuggestion(null);
   };
 
   /**
@@ -180,13 +186,33 @@ const HorasComplementares: React.FC = () => {
       setProgress(0);
 
       // OCR é best-effort: falha não bloqueia o fluxo
+      let extractedText = "";
       try {
         const token = await user.getIdToken();
         const { text } = await extrairTextoOcr(storagePath, token);
+        extractedText = text;
         setOcrText(text);
       } catch {
         setOcrText("");
-        toast.warning("Não foi possível extrair o texto do documento automaticamente.");
+        setOcrError(true);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+
+      // Análise com IA: usa o texto OCR para sugerir tipo e descrição de atividade
+      if (extractedText) {
+        try {
+          const token = await user.getIdToken();
+          const cursoSelecionado = cursos.find((c) => c.id === cursoId) || curso;
+          const regras = cursoSelecionado?.regrasAtividades ?? [];
+          if (regras.length > 0) {
+            const sugestao = await analisarComIA(extractedText, regras, token);
+            if (sugestao.grupoId && sugestao.categoriaId) {
+              setAiSuggestion({ grupoId: sugestao.grupoId, categoriaId: sugestao.categoriaId });
+            }
+          }
+        } catch {
+          // Análise com IA é best-effort
+        }
       }
 
       setUploadStep("informacoes");
@@ -202,6 +228,8 @@ const HorasComplementares: React.FC = () => {
     setUploadStep("anexo");
     setOcrText("");
     setTempStoragePath(null);
+    setAiSuggestion(null);
+    setCategoriaId("");
   };
 
   /**
@@ -231,12 +259,10 @@ const HorasComplementares: React.FC = () => {
         cursoSelecionado?.nome || null,
         cursoSelecionado?.codigo || null,
         user.displayName || userData.nome || "Aluno",
-        user.email || userData.email || "",
-        observacao
+        user.email || userData.email || ""
       );
 
-      toast.success("Certificado enviado e validado com sucesso!");
-      resetUploadState();
+      setUploadSuccess(true);
       loadCertificados();
 
       // Notificação fail-safe
@@ -257,9 +283,35 @@ const HorasComplementares: React.FC = () => {
           }),
         });
       } catch {}
+
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      resetUploadState();
     } catch (err: any) {
       const motivo = err.message || "Erro ao validar o certificado";
-      toast.error(motivo);
+
+      const isSecurityRejection =
+        err.encontrados != null ||
+        motivo.includes("segurança") ||
+        motivo.includes("rejeitado") ||
+        motivo.includes("inválido") ||
+        motivo.includes("limite permitido");
+
+      let rejectionReason: string;
+      if (err.encontrados && (err.encontrados as string[]).length > 0) {
+        rejectionReason = `Estruturas suspeitas: ${(err.encontrados as string[]).join(", ")}`;
+      } else if (motivo.includes("limite permitido")) {
+        rejectionReason = "Arquivo acima do tamanho máximo permitido";
+      } else if (motivo.includes("inválido")) {
+        rejectionReason = "O arquivo não é um PDF válido";
+      } else {
+        rejectionReason = motivo;
+      }
+
+      if (isSecurityRejection) {
+        setUploadError(rejectionReason);
+      } else {
+        toast.error(motivo);
+      }
 
       try {
         await saveRejectedCertificado({
@@ -267,7 +319,7 @@ const HorasComplementares: React.FC = () => {
           nomeAluno: user.displayName || userData.nome || "Aluno",
           emailAluno: user.email || userData.email || "",
           nomeArquivo: file.name,
-          motivoRejeicao: motivo,
+          motivoRejeicao: rejectionReason,
           encontrados: err.encontrados,
           categoriaId,
           categoriaNome,
@@ -277,6 +329,10 @@ const HorasComplementares: React.FC = () => {
         });
         loadCertificados();
       } catch {}
+
+      if (isSecurityRejection) {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      }
 
       resetUploadState();
     } finally {
@@ -502,17 +558,17 @@ const HorasComplementares: React.FC = () => {
             {/* CONTEÚDO DA ABA: DASHBOARD */}
             {activeTab === "dashboard" && (
               <>
-                <div className="rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 text-primary-foreground shadow-md sm:p-7">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="rounded-xl bg-gradient-to-r from-primary to-[hsl(210,72%,42%)] p-5 text-primary-foreground shadow-md sm:p-6">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-xl font-bold sm:text-2xl">
-                        Olá, {displayName.split(" ")[0]}!
+                        Olá, {displayName.toUpperCase().split(" ")[0]}!
                       </h2>
-                      <p className="mt-1 text-sm text-primary-foreground/80">
+                      <p className="mt-0.5 text-sm text-primary-foreground/75">
                         Veja seu dashboard com o progresso das horas complementares
                       </p>
                     </div>
-                    <p className="text-xs capitalize text-primary-foreground/60 sm:text-sm">
+                    <p className="text-xs capitalize text-primary-foreground/60 sm:text-sm sm:text-right">
                       {new Date().toLocaleDateString("pt-BR", {
                         weekday: "long",
                         day: "numeric",
@@ -523,9 +579,6 @@ const HorasComplementares: React.FC = () => {
                   </div>
                 </div>
 
-                <DashboardCards certificados={certificadosDoCurso} loading={histLoading} />
-
-                {/* Componente que detalha o progresso por categoria de atividade */}
                 <ProgressoHoras
                   certificados={certificadosDoCurso}
                   horasAprovadas={horasAprovadas}
@@ -557,8 +610,6 @@ const HorasComplementares: React.FC = () => {
         onCursoChange={setCursoId}
         onFileSelect={setFile}
         onFileRemove={() => setFile(null)}
-        observacao={observacao}
-        onObservacaoChange={setObservacao}
         categoriaId={categoriaId}
         onCategoriaChange={setCategoriaId}
         uploading={uploading}
@@ -574,6 +625,10 @@ const HorasComplementares: React.FC = () => {
         step={uploadStep}
         ocrText={ocrText}
         ocrLoading={ocrLoading}
+        ocrError={ocrError}
+        uploadError={uploadError}
+        uploadSuccess={uploadSuccess}
+        aiSuggestion={aiSuggestion}
         onNextStep={handleNextStep}
         onBack={handleBack}
       />

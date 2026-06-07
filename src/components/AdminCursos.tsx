@@ -56,17 +56,6 @@ import CourseRulesEditor from "@/components/CourseRulesEditor";
 
 const CARGA_HORARIA_COMPLEMENTAR_PADRAO = 100;
 
-const turnoLabel: Record<string, string> = {
-  manhã: "Manhã",
-  tarde: "Tarde",
-  noite: "Noite",
-};
-
-const turnoColor: Record<string, string> = {
-  manhã: "bg-amber-100 text-amber-800 border-amber-200",
-  tarde: "bg-sky-100 text-sky-800 border-sky-200",
-  noite: "bg-indigo-100 text-indigo-800 border-indigo-200",
-};
 
 const AdminCursos: React.FC = () => {
   const [cursos, setCursos] = useState<Curso[]>([]);
@@ -83,7 +72,6 @@ const AdminCursos: React.FC = () => {
   // Form
   const [nome, setNome] = useState("");
   const [codigo, setCodigo] = useState("");
-  const [turno, setTurno] = useState<string>("manhã");
 
   const loadCursos = useCallback(async () => {
     setLoading(true);
@@ -106,7 +94,6 @@ const AdminCursos: React.FC = () => {
     setEditing(null);
     setNome("");
     setCodigo("");
-    setTurno("manhã");
     setDialogOpen(true);
   };
 
@@ -114,7 +101,6 @@ const AdminCursos: React.FC = () => {
     setEditing(curso);
     setNome(curso.nome);
     setCodigo(curso.codigo);
-    setTurno(curso.turno);
     setDialogOpen(true);
   };
 
@@ -134,7 +120,6 @@ const AdminCursos: React.FC = () => {
         const payload = {
           nome: nome.trim().toUpperCase(),
           codigo: codigo.trim(),
-          turno: turno as Curso["turno"],
           cargaHorariaComplementar: editing.cargaHorariaComplementar ?? CARGA_HORARIA_COMPLEMENTAR_PADRAO,
         };
         await updateCurso(editing.id, payload);
@@ -142,7 +127,6 @@ const AdminCursos: React.FC = () => {
       } else {
         const payload = {
           nome: nome.trim().toUpperCase(),
-          turno: turno as Curso["turno"],
           cargaHorariaComplementar: CARGA_HORARIA_COMPLEMENTAR_PADRAO,
         };
         await createCurso(payload);
@@ -176,8 +160,7 @@ const AdminCursos: React.FC = () => {
     const q = searchTerm.toLowerCase();
     return (
       c.nome.toLowerCase().includes(q) ||
-      c.codigo.toLowerCase().includes(q) ||
-      c.turno.toLowerCase().includes(q)
+      c.codigo.toLowerCase().includes(q)
     );
   });
 
@@ -231,7 +214,6 @@ const AdminCursos: React.FC = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Código</TableHead>
-                  <TableHead>Turno</TableHead>
                   <TableHead className="w-[132px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -243,14 +225,6 @@ const AdminCursos: React.FC = () => {
                       <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                         {curso.codigo}
                       </code>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={turnoColor[curso.turno] || ""}
-                      >
-                        {turnoLabel[curso.turno] || curso.turno}
-                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -293,19 +267,7 @@ const AdminCursos: React.FC = () => {
                 disabled={!editing}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Turno</label>
-              <Select value={turno} onValueChange={setTurno}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="manhã">Manhã</SelectItem>
-                  <SelectItem value="tarde">Tarde</SelectItem>
-                  <SelectItem value="noite">Noite</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
             <div className="rounded-md bg-muted/60 border border-border/60 px-3 py-2 text-xs text-muted-foreground">
               Carga horária complementar: <span className="font-semibold text-foreground">{CARGA_HORARIA_COMPLEMENTAR_PADRAO}h</span> (padrão institucional)
             </div>

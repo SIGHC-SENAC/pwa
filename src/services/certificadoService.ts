@@ -359,6 +359,31 @@ export async function extrairTextoOcr(
 }
 
 /**
+ * Envia o texto OCR e as regras de atividades para a IA classificar o certificado.
+ * @param ocrText - Texto extraído do certificado
+ * @param regrasAtividades - Grupos de atividades do curso
+ * @param token - JWT do usuário autenticado
+ * @returns grupoId e categoriaId sugeridos pela IA (podem ser null se a IA não conseguir classificar)
+ */
+export async function analisarComIA(
+  ocrText: string,
+  regrasAtividades: unknown[],
+  token: string
+): Promise<{ grupoId: string | null; categoriaId: string | null }> {
+  const res = await fetch(`${API_BASE}/certificados/analisar-ia`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ ocrText, regrasAtividades }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Erro ao analisar com IA");
+  return data;
+}
+
+/**
  * Formata o tamanho de arquivo para formato legível
  * @param bytes - Tamanho em bytes
  * @returns String com tamanho formatado (B, KB, ou MB)

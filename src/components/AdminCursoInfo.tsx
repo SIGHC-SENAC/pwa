@@ -105,7 +105,6 @@ const AdminCursoInfo: React.FC<Props> = ({ cursoId, cursoIds }) => {
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
                 {selectedCurso?.codigo || "Curso"}
               </Badge>
-              {selectedCurso?.turno && <Badge variant="secondary">{selectedCurso.turno}</Badge>}
             </div>
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground">
               {selectedCurso?.nome || "Curso vinculado"}

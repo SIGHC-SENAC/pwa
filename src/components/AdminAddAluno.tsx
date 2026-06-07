@@ -290,7 +290,7 @@ const AdminAddAluno: React.FC = () => {
                   <SelectItem value="todos">Todos os cursos</SelectItem>
                   {cursos.map((c) => (
                     <SelectItem key={c.id || c.codigo} value={c.id || c.codigo}>
-                      {c.nome} ({c.turno})
+                      {c.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -397,7 +397,7 @@ const AdminAddAluno: React.FC = () => {
                       <Checkbox checked={!!c.id && cursoIds.includes(c.id)} onCheckedChange={() => toggleCurso(c.id)} />
                       <span>
                         <span className="font-medium text-foreground">{c.nome}</span>
-                        <span className="text-muted-foreground"> - {c.codigo} ({c.turno})</span>
+                        <span className="text-muted-foreground"> - {c.codigo}</span>
                       </span>
                     </label>
                   ))}
@@ -430,7 +430,7 @@ const AdminAddAluno: React.FC = () => {
                       return (
                         <div key={curso.id} className="space-y-1.5">
                           <p className="text-xs font-medium text-muted-foreground">
-                            {curso.nome} - {curso.codigo} ({curso.turno})
+                            {curso.nome} - {curso.codigo}
                           </p>
                           {turmasDoCurso.length === 0 ? (
                             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
