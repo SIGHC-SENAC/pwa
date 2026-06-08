@@ -163,11 +163,6 @@ const ForgotPassword: React.FC = () => {
             </>
           )}
         </div>
-
-        {/* Footer */}
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Faculdade Senac Pernambuco
-        </p>
       </div>
     </div>
   );

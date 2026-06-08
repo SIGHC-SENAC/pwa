@@ -155,7 +155,7 @@ const Login: React.FC = () => {
               Ambiente acadêmico para gestão e validação de certificados de atividades complementares.
             </p>
             <p className="mt-4 text-[11px] font-bold text-yellow-400 uppercase tracking-wider">
-              ESSE SITE É PARA TESTES E NÃO ESTÁ RELACIONADO À INSTITUIÇÃO SENAC
+              Este site não pertence a instituição SENAC
             </p>
           </div>
         </div>
@@ -247,11 +247,6 @@ const Login: React.FC = () => {
               </button>
             </div>
           </div>
-
-          {/* Footer */}
-          <p className="mt-8 text-center text-xs text-muted-foreground">
-            Faculdade Senac Pernambuco
-          </p>
         </div>
       </div>
     </div>

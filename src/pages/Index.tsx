@@ -13,7 +13,7 @@ const Index = () => {
         <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
         {/* Aviso de teste */}
         <p className="text-lg font-semibold text-red-600 mb-6">
-          ESSE SITE É PARA TESTES E NÃO ESTÁ RELACIONADO À INSTITUIÇÃO SENAC
+          Este site não pertence a instituição SENAC
         </p>
         {/* Subtítulo com instrução */}
         <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
