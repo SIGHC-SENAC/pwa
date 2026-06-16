@@ -15,6 +15,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import FirstAccess from "./pages/FirstAccess";
 import NotFound from "./pages/NotFound";
 import Privacidade from "./pages/Privacidade";
+import { FloatingChatButton } from "@/components/FloatingChatButton";
 
 // Cria instância do cliente React Query para gerenciar estado e cache
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             {/* Rota padrão para páginas não encontradas */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingChatButton />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

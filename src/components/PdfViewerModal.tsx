@@ -18,15 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, CheckCircle2, XCircle, FileText, ExternalLink } from "lucide-react";
 import { CertificadoMeta, getDownloadURLFromPath } from "@/services/certificadoService";
-import { fetchCursoById, type GrupoAtividade } from "@/services/cursoService";
+import { fetchCursoById, findGrupoByAtividadeId, type GrupoAtividade } from "@/services/cursoService";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -77,6 +75,7 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const [pdfError, setPdfError] = useState(false);
   const [showPdfFallback, setShowPdfFallback] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
+  const [grupoId, setGrupoId] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [categoriaSaving, setCategoriaSaving] = useState(false);
   const [gruposAtividades, setGruposAtividades] = useState<GrupoAtividade[]>([]);
@@ -90,7 +89,9 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
       setPdfError(false);
       setShowPdfFallback(false);
       setPdfUrl(cert.downloadURL || "");
-      setCategoriaId(cert.categoriaId || "");
+      const catId = cert.categoriaId || "";
+      setCategoriaId(catId);
+      setGrupoId("");
     }
   }, [cert]);
 
@@ -99,11 +100,19 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     if (!cert?.cursoId) { setGruposAtividades([]); return; }
 
     fetchCursoById(cert.cursoId)
-      .then((curso) => { if (active) setGruposAtividades(curso.regrasAtividades ?? []); })
+      .then((curso) => {
+        if (!active) return;
+        const grupos = curso.regrasAtividades ?? [];
+        setGruposAtividades(grupos);
+        if (cert.categoriaId) {
+          const grupo = findGrupoByAtividadeId(grupos, cert.categoriaId);
+          setGrupoId(grupo?.id ?? "");
+        }
+      })
       .catch(() => { if (active) setGruposAtividades([]); });
 
     return () => { active = false; };
-  }, [cert?.cursoId]);
+  }, [cert?.cursoId, cert?.categoriaId]);
 
   React.useEffect(() => {
     if (!open || !cert) return;
@@ -151,8 +160,10 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const status = statusConfig[cert.status] || statusConfig.pendente;
   const isPendente = cert.status === "pendente";
   const categoriaChanged = categoriaId !== (cert.categoriaId || "");
+  const grupoSelecionado = gruposAtividades.find((g) => g.id === grupoId);
   const categoriaSelecionada = categoriaId
-    ? gruposAtividades.flatMap((grupo) => grupo.atividades).find((atividade) => atividade.id === categoriaId)     : undefined;
+    ? gruposAtividades.flatMap((g) => g.atividades).find((a) => a.id === categoriaId)
+    : undefined;
 
   const handleAprovar = async () => {
     const h = Number(horas);
@@ -283,25 +294,47 @@ const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           <div className="break-words"><span className="text-muted-foreground">E-mail:</span> <span className="font-medium text-foreground">{cert.emailAluno}</span></div>
           <div className="break-words"><span className="text-muted-foreground">Arquivo:</span> <span className="font-medium text-foreground">{cert.nomeArquivo}</span></div>
           <div className="space-y-2">
-            <span className="text-muted-foreground">Categoria:</span>
-            <Select value={categoriaId || "sem-categoria"} onValueChange={(value) => setCategoriaId(value === "sem-categoria" ? "" : value)}>
-              <SelectTrigger className="min-h-10 bg-background">
-                <SelectValue placeholder="Selecionar categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sem-categoria">Sem categoria</SelectItem>
-                {gruposAtividades.map((grupo) => (
-                  <SelectGroup key={grupo.id}>
-                    <SelectLabel>{grupo.label}</SelectLabel>
-                    {grupo.atividades.map((atividade) => (
-                      <SelectItem key={atividade.id} value={atividade.id}>
-                        {atividade.id} - {atividade.descricao}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
+            <div>
+              <span className="text-muted-foreground text-sm">Tipo de atividade:</span>
+              <Select
+                value={grupoId}
+                onValueChange={(value) => {
+                  setGrupoId(value);
+                  setCategoriaId("");
+                }}
+              >
+                <SelectTrigger className="mt-1 min-h-9 bg-background">
+                  <SelectValue placeholder="Selecione o tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {gruposAtividades.map((grupo) => (
+                    <SelectItem key={grupo.id} value={grupo.id}>
+                      {grupo.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-sm">Descrição da atividade:</span>
+              <Select
+                value={categoriaId}
+                onValueChange={setCategoriaId}
+                disabled={!grupoId}
+              >
+                <SelectTrigger className="mt-1 min-h-9 bg-background">
+                  <SelectValue placeholder={grupoId ? "Selecione a descrição..." : "Selecione primeiro o tipo"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {grupoSelecionado?.atividades.map((atividade) => (
+                    <SelectItem key={atividade.id} value={atividade.id}>
+                      <span className="mr-1 font-medium text-muted-foreground">{atividade.id}</span>
+                      {atividade.descricao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {categoriaChanged && (
               <Button
                 type="button"
